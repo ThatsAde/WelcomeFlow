@@ -51,4 +51,17 @@ public enum FunnelEvent {
     public static String stepAbandonedKey(String stepId) {
         return "step:" + stepId + ":abandoned";
     }
+
+    /**
+     * Reserved scope for events that are not tied to any one flow.
+     *
+     * <p>The retention rewards are server-wide, not per-flow: a returning
+     * player has not necessarily run any tutorial. Filing them under a real
+     * flow id would inflate that flow's numbers and make the funnel lie, so
+     * they get their own bucket that {@code /wf stats} renders separately.
+     *
+     * <p>Parenthesised because a YAML flow key cannot contain brackets,
+     * making a collision with a real flow id impossible.
+     */
+    public static final String GLOBAL_SCOPE = "(global)";
 }

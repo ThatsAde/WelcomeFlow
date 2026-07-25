@@ -71,6 +71,12 @@ command:
   status-cmd:
     usage: 'status <player>'
 
+# The running checklist bossbar shown while a player is in a flow.
+# Available: <step> (the step's display text), <step-number>, <step-total>,
+# <progress>, <required>, <flow>.
+checklist:
+  bossbar: '<white><step> <gray>(<yellow><step-number><gray>/<yellow><step-total><gray>)'
+
 flow:
   hint: '<yellow>Hint:</yellow> <gray><hint>'
   abandoned: '<gray>Your progress on ''<flow>'' expired and was reset.'

@@ -5,6 +5,10 @@ import org.bukkit.entity.Player;
 import studios.littlesquad.welcomeflow.session.PlayerSession;
 import studios.littlesquad.welcomeflow.util.Text;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Per-execution data handed to an {@link Action}.
  *
@@ -23,6 +27,10 @@ import studios.littlesquad.welcomeflow.util.Text;
  * @param stepProgress units completed toward the current step
  * @param stepRequired units the current step needs, or {@code 0} when not
  *     applicable
+ * @param extras additional MiniMessage placeholders for contexts that have
+ *     something extra to offer -- the return bonus supplies
+ *     {@code <time-away>}. Empty for ordinary flow contexts, so no other
+ *     call site carries a field meaningless to it.
  */
 public record ActionContext(
         Player player,
@@ -30,11 +38,27 @@ public record ActionContext(
         String flowId,
         String stepId,
         int stepProgress,
-        int stepRequired) {
+        int stepRequired,
+        Map<String, String> extras) {
+
+    public ActionContext {
+        extras = extras == null ? Map.of() : Map.copyOf(extras);
+    }
+
+    public ActionContext(Player player, PlayerSession session, String flowId, String stepId,
+                         int stepProgress, int stepRequired) {
+        this(player, session, flowId, stepId, stepProgress, stepRequired, Map.of());
+    }
 
     /** Context for a flow-level trigger, with no current step. */
     public static ActionContext ofFlow(Player player, PlayerSession session, String flowId) {
-        return new ActionContext(player, session, flowId, null, 0, 0);
+        return new ActionContext(player, session, flowId, null, 0, 0, Map.of());
+    }
+
+    /** Flow-level context carrying extra placeholders. */
+    public static ActionContext ofFlow(Player player, PlayerSession session, String flowId,
+                                       Map<String, String> extras) {
+        return new ActionContext(player, session, flowId, null, 0, 0, extras);
     }
 
     /**
@@ -50,14 +74,15 @@ public record ActionContext(
         int percent = stepRequired > 0
                 ? Math.min(100, (int) Math.round(100.0 * stepProgress / stepRequired))
                 : 0;
-        return new TagResolver[] {
-                Text.placeholder("player", player.getName()),
-                Text.placeholder("flow", flowId == null ? "" : flowId),
-                Text.placeholder("step", stepId == null ? "" : stepId),
-                Text.placeholder("progress", String.valueOf(stepProgress)),
-                Text.placeholder("required", String.valueOf(stepRequired)),
-                Text.placeholder("percent", String.valueOf(percent)),
-        };
+        List<TagResolver> resolvers = new ArrayList<>(6 + extras.size());
+        resolvers.add(Text.placeholder("player", player.getName()));
+        resolvers.add(Text.placeholder("flow", flowId == null ? "" : flowId));
+        resolvers.add(Text.placeholder("step", stepId == null ? "" : stepId));
+        resolvers.add(Text.placeholder("progress", String.valueOf(stepProgress)));
+        resolvers.add(Text.placeholder("required", String.valueOf(stepRequired)));
+        resolvers.add(Text.placeholder("percent", String.valueOf(percent)));
+        extras.forEach((name, value) -> resolvers.add(Text.placeholder(name, value)));
+        return resolvers.toArray(new TagResolver[0]);
     }
 
     /** Progress as a 0..1 fraction, for bossbars. */

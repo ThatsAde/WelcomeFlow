@@ -27,16 +27,25 @@ import studios.littlesquad.welcomeflow.config.MessageService;
 import studios.littlesquad.welcomeflow.flow.FlowEngine;
 import studios.littlesquad.welcomeflow.flow.FlowRegistry;
 import studios.littlesquad.welcomeflow.objective.listener.ObjectiveListeners;
+import studios.littlesquad.welcomeflow.retention.RetentionSettings;
+import studios.littlesquad.welcomeflow.retention.ReturnBonusService;
+import studios.littlesquad.welcomeflow.retention.SecondJoinService;
+import studios.littlesquad.welcomeflow.reward.RewardService;
+import studios.littlesquad.welcomeflow.session.PlayerSession;
 import studios.littlesquad.welcomeflow.session.SessionLifecycleListener;
 import studios.littlesquad.welcomeflow.session.SessionManager;
+import studios.littlesquad.welcomeflow.storage.FunnelEvent;
 import studios.littlesquad.welcomeflow.storage.SqliteStorageProvider;
 import studios.littlesquad.welcomeflow.storage.StorageException;
 import studios.littlesquad.welcomeflow.storage.StorageProvider;
+import studios.littlesquad.welcomeflow.ui.ChecklistBossBarObserver;
+import studios.littlesquad.welcomeflow.ui.ChecklistBossBarService;
 import studios.littlesquad.welcomeflow.util.Scheduling;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
@@ -61,6 +70,12 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
     private FlowRegistry flowRegistry;
     private FlowEngine flowEngine;
     private ObjectiveListeners objectiveListeners;
+    private ChecklistBossBarService bossBars;
+    private RewardService rewardService;
+    private SecondJoinService secondJoinService;
+    private ReturnBonusService returnBonusService;
+    private List<Action> secondJoinActions = List.of();
+    private List<Action> returnBonusActions = List.of();
 
     @Override
     public void onEnable() {
@@ -97,10 +112,13 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
         objectiveListeners = new ObjectiveListeners(this, flowEngine, getLogger());
         objectiveListeners.registerFor(flowRegistry.usedObjectiveTypes());
 
+        bossBars = new ChecklistBossBarService(configManager, messageService);
+        flowEngine.addObserver(new ChecklistBossBarObserver(bossBars));
+
+        initialiseRetention();
+
         getServer().getPluginManager().registerEvents(
-                new SessionLifecycleListener(sessionManager, flowEngine, getLogger(), (player, session) -> {
-                    // Retention services attach here in M3.
-                }),
+                new SessionLifecycleListener(sessionManager, flowEngine, getLogger(), this::evaluateRetention),
                 this);
 
         sessionManager.startPeriodicFlush(configManager.periodicFlushIntervalSeconds());
@@ -121,6 +139,11 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
 
         if (objectiveListeners != null) {
             objectiveListeners.unregisterAll();
+        }
+        if (bossBars != null) {
+            // Bossbars are client-side state we own: without this they stay on
+            // screen after the plugin stops, until the player relogs.
+            bossBars.hideAll(getServer().getOnlinePlayers());
         }
         if (sessionManager != null) {
             sessionManager.stopPeriodicFlush();
@@ -181,6 +204,55 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
                     return parsed;
                 });
         getLogger().info("Registered " + actionRegistry.size() + " action types.");
+    }
+
+    /**
+     * Builds the retention layer.
+     *
+     * <p>The reward action lists are parsed once here rather than per grant,
+     * so a typo in {@code second-join.actions} surfaces at startup alongside
+     * every other config problem instead of the first time somebody logs in
+     * for the second time.
+     */
+    private void initialiseRetention() {
+        List<ConfigIssue> issues = new ArrayList<>();
+        secondJoinActions = parseRewardActions("second-join.actions", issues);
+        returnBonusActions = parseRewardActions("return-bonus.actions", issues);
+        reportIssues(issues);
+
+        rewardService = new RewardService(actionRunner, sessionManager, getLogger(),
+                rewardKey -> flowEngine.incrementFunnel(FunnelEvent.GLOBAL_SCOPE, rewardKey));
+
+        // Settings are re-read per evaluation so /wf reload takes effect
+        // without rebuilding the services or losing in-flight guards.
+        Supplier<RetentionSettings> settings = () -> RetentionSettings.from(configManager);
+        secondJoinService = new SecondJoinService(settings, rewardService, () -> secondJoinActions);
+        returnBonusService = new ReturnBonusService(settings, rewardService, () -> returnBonusActions);
+    }
+
+    private List<Action> parseRewardActions(String path, List<ConfigIssue> issues) {
+        List<?> raw = configManager.raw().getList(path);
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        return flowRegistry.parseActionList(raw, path, issues);
+    }
+
+    /**
+     * Runs the retention checks for a player whose session just loaded.
+     *
+     * <p>Evaluated before flow assignment so a returning player's reward lands
+     * ahead of any tutorial text, and guarded so a reward failure can never
+     * stop them being onboarded.
+     */
+    private void evaluateRetention(org.bukkit.entity.Player player, PlayerSession session) {
+        try {
+            secondJoinService.evaluate(player, session);
+            returnBonusService.evaluate(player, session);
+        } catch (RuntimeException e) {
+            getLogger().log(Level.WARNING,
+                    "Retention reward check failed for " + player.getName() + "; continuing without it.", e);
+        }
     }
 
     /** Loads flows and reports every config problem in one pass. */

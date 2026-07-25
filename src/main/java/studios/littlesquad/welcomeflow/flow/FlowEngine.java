@@ -16,6 +16,9 @@ import studios.littlesquad.welcomeflow.storage.StorageException;
 import studios.littlesquad.welcomeflow.storage.StorageProvider;
 import studios.littlesquad.welcomeflow.util.Scheduling;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,6 +45,13 @@ public final class FlowEngine {
     private final Scheduling scheduling;
     private final ConfigManager config;
     private final Logger logger;
+
+    /**
+     * Reactors to state transitions (checklist bossbar, public API events).
+     * Notified defensively -- a misbehaving observer must not derail a
+     * player's flow.
+     */
+    private final List<FlowObserver> observers = new ArrayList<>();
 
     public FlowEngine(FlowRegistry flowRegistry, SessionManager sessionManager, ActionRunner actionRunner,
                       StorageProvider storage, Scheduling scheduling, ConfigManager config, Logger logger) {
@@ -100,6 +110,7 @@ public final class FlowEngine {
         session.clearTransientCounters();
 
         incrementFunnel(flow.id(), FunnelEvent.STARTED.key());
+        notifyObservers(observer -> observer.onFlowStart(player, session, flow));
         actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_START),
                 ActionContext.ofFlow(player, session, flow.id()));
         beginStep(player, session, flow, progress);
@@ -136,9 +147,12 @@ public final class FlowEngine {
             return;
         }
         incrementFunnel(flow.id(), FunnelEvent.stepReachedKey(step.id()));
+        int stepIndex = progress.stepIndex();
+        int done = progress.stepProgress();
+        notifyObservers(observer -> observer.onStepStart(player, session, flow, step, stepIndex, done));
         actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_START), contextFor(player, session, flow, step));
-        scheduleHint(player, session, flow, step, progress.stepIndex());
-        schedulePlayTimeCompletion(player, session, flow, step, progress.stepIndex());
+        scheduleHint(player, session, flow, step, stepIndex);
+        schedulePlayTimeCompletion(player, session, flow, step, stepIndex);
     }
 
     /**
@@ -248,6 +262,9 @@ public final class FlowEngine {
         if (progress.stepProgress() >= step.requiredAmount()) {
             completeStep(player, session, flow, step, progress);
         } else {
+            int stepIndex = progress.stepIndex();
+            int done = progress.stepProgress();
+            notifyObservers(observer -> observer.onStepProgress(player, session, flow, step, stepIndex, done));
             actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_PROGRESS),
                     contextFor(player, session, flow, step));
         }
@@ -284,6 +301,7 @@ public final class FlowEngine {
     }
 
     private void completeStep(Player player, PlayerSession session, Flow flow, Step step, FlowProgress progress) {
+        notifyObservers(observer -> observer.onStepComplete(player, session, flow, step));
         actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_COMPLETE),
                 contextFor(player, session, flow, step));
 
@@ -310,6 +328,7 @@ public final class FlowEngine {
         sessionManager.flush(session);
 
         incrementFunnel(flow.id(), FunnelEvent.COMPLETED.key());
+        notifyObservers(observer -> observer.onFlowComplete(player, session, flow));
         actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_COMPLETE),
                 ActionContext.ofFlow(player, session, flow.id()));
 
@@ -338,6 +357,31 @@ public final class FlowEngine {
         Step step = flow.stepAt(progress.stepIndex());
         if (step != null) {
             incrementFunnel(flow.id(), FunnelEvent.stepAbandonedKey(step.id()));
+        }
+        notifyObservers(observer -> observer.onFlowInterrupted(session, flow, step));
+    }
+
+    // --- observers --------------------------------------------------------
+
+    public void addObserver(FlowObserver observer) {
+        observers.add(observer);
+    }
+
+    /**
+     * Notifies every observer, isolating failures.
+     *
+     * <p>An exception from the bossbar renderer or a third-party event
+     * handler must not abort the transition that triggered it -- the player's
+     * progress matters more than the notification.
+     */
+    private void notifyObservers(Consumer<FlowObserver> notification) {
+        for (FlowObserver observer : observers) {
+            try {
+                notification.accept(observer);
+            } catch (RuntimeException e) {
+                logger.log(Level.WARNING,
+                        "Flow observer " + observer.getClass().getSimpleName() + " threw; continuing.", e);
+            }
         }
     }
 
