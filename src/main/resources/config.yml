@@ -1,0 +1,58 @@
+# =============================================================================
+#  WelcomeFlow - config.yml
+#  Global settings. Flow definitions live in flows.yml, all user-facing text
+#  lives in messages.yml. Nothing in this file needs to change for the
+#  plugin to work out of the box.
+# =============================================================================
+
+# Print extra detail to console: flow selection decisions, objective
+# progress ticks, storage timings. Leave off in production.
+debug: false
+
+storage:
+  # Only "sqlite" is supported in 1.0.0. A "mysql" provider is planned for
+  # 1.1 behind the same StorageProvider interface, so this key already
+  # exists to make that upgrade a config change, not a migration.
+  type: sqlite
+  # Relative to the plugin's data folder.
+  file: data.db
+  # How often (in seconds) an in-memory session is flushed to disk even if
+  # nothing notable happened, as a safety net against unexpected shutdowns.
+  periodic-flush-interval-seconds: 120
+
+second-join:
+  enabled: true
+  # Which login counts as the "second join" reward. 2 = classic second
+  # join. Raise it if you want to reward the 3rd/4th/etc. login instead.
+  trigger-join-number: 2
+  # A player must have spent at least this many seconds online during
+  # their first session for the reward to be eligible. Prevents farming
+  # the reward with instant relogs. 0 disables the requirement.
+  minimum-first-session-seconds: 120
+
+return-bonus:
+  enabled: true
+  # Minimum time away (in hours) since last logout before a return counts.
+  minimum-hours-away: 12
+  # Minimum time (in hours) between two return-bonus claims by the same
+  # player, even if they qualify again sooner.
+  cooldown-hours: 20
+  # 0 = unlimited claims over the player's lifetime.
+  max-claims: 0
+
+ui:
+  bossbar:
+    # Default bossbar settings for flows that don't override them under
+    # their own settings.show-checklist-bossbar block.
+    enabled: true
+    color: BLUE
+    style: SEGMENTED_10
+  title:
+    default-fade-in-ticks: 10
+    default-stay-ticks: 60
+    default-fade-out-ticks: 20
+
+placeholderapi:
+  # When PlaceholderAPI is installed, resolve %placeholder% patterns found
+  # inside message/action strings before MiniMessage parsing.
+  resolve-in-messages: true

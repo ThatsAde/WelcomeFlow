@@ -1,0 +1,101 @@
+# =============================================================================
+#  WelcomeFlow - flows.yml
+#  Flow definitions. The "welcome" flow below is a complete, working
+#  6-step tutorial that requires zero edits to be useful -- it just needs
+#  a /kit starter command to exist (Essentials, CMI, etc.) for step 6 to
+#  be completable; remove that step if you don't run a kits plugin.
+#
+#  ACTION SYNTAX
+#  --------------
+#  Every action can be written two ways:
+#
+#  1) Compact string form: 'type: field;;field;;field'
+#     A single ";;" always separates fields, for both text and numeric
+#     fields alike -- there is no special-casing to remember. A literal
+#     ";;" inside a field (rare, e.g. inside MiniMessage text) is written
+#     as "\;;".
+#       'title: <white>Hello;;<gray>subtitle;;10;;60;;20'
+#       'sound: ENTITY_PLAYER_LEVELUP;;1;;1'
+#
+#  2) Expanded map form, for actions with many or optional fields:
+#       - type: title
+#         text: '<white>Hello'
+#         subtitle: '<gray>subtitle'
+#         fade-in: 10
+#         stay: 60
+#         fade-out: 20
+#
+#  Both forms are equivalent and can be mixed freely within the same list.
+# =============================================================================
+
+flows:
+  welcome:
+    priority: 10
+    conditions:
+      first-join-only: true
+      permission: ""          # empty = everyone
+      worlds: []               # empty = all worlds
+    settings:
+      resume-on-rejoin: true
+      abandon-after-hours: 48
+      show-checklist-bossbar: true
+    on-flow-start:
+      - 'title: <gradient:#7ec8ff:#ffffff>Welcome</gradient>;;<gray>Let''s get you started;;10;;60;;20'
+      - 'sound: ENTITY_PLAYER_LEVELUP;;1;;1'
+    steps:
+      - id: move
+        display: "<white>Take your first steps"
+        objective:
+          type: WALK_DISTANCE
+          amount: 25
+        hint-after: 45s
+        on-step-complete:
+          - 'message: <green>OK Nice. Now go chop some wood.'
+
+      - id: chop
+        display: "<white>Chop some wood"
+        objective:
+          type: BREAK_BLOCK
+          material: OAK_LOG
+          amount: 5
+        hint-after: 60s
+        on-step-complete:
+          - 'message: <green>OK Now craft a crafting table.'
+
+      - id: craft
+        display: "<white>Craft a crafting table"
+        objective:
+          type: CRAFT_ITEM
+          material: CRAFTING_TABLE
+          amount: 1
+        on-step-complete:
+          - 'sound: ENTITY_EXPERIENCE_ORB_PICKUP;;1;;1.2'
+          - 'message: <green>OK Now say hello in chat.'
+
+      - id: greet
+        display: "<white>Say hello in chat"
+        objective:
+          type: SEND_CHAT
+          amount: 1
+        on-step-complete:
+          - 'message: <green>OK Now open your inventory.'
+
+      - id: inventory
+        display: "<white>Open your inventory"
+        objective:
+          type: OPEN_INVENTORY
+        on-step-complete:
+          - 'message: <green>OK Last step -- claim your starter kit.'
+
+      - id: rewards
+        display: "<white>Claim your starter kit"
+        objective:
+          type: RUN_COMMAND
+          pattern: "/kit starter"
+        on-step-complete:
+          - 'sound: ENTITY_EXPERIENCE_ORB_PICKUP;;1;;1.4'
+
+    on-flow-complete:
+      - 'broadcast: <yellow><player> completed the WelcomeFlow tutorial!'
+      - 'command[console]: eco give <player> 500'
+      - 'give-item: DIAMOND;;3'

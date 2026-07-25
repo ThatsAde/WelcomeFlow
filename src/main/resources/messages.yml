@@ -1,0 +1,80 @@
+# =============================================================================
+#  WelcomeFlow - messages.yml
+#  Every user-facing string in the plugin lives here, in MiniMessage
+#  format (https://docs.advntr.dev/minimessage/format.html). No text is
+#  hardcoded in Java. Placeholders available per-key are noted in comments;
+#  <player>, <flow> and <step> are resolved from context, and any
+#  PlaceholderAPI %placeholder% is also resolved first when the plugin is
+#  installed (see config.yml: placeholderapi.resolve-in-messages).
+# =============================================================================
+
+prefix: '<gray>[<gradient:#7ec8ff:#ffffff>WelcomeFlow</gradient>]</gray> '
+
+general:
+  no-permission: '<red>You do not have permission to do that.'
+  player-only: '<red>Only a player can use this command.'
+  player-not-found: '<red>Player ''<name>'' was not found.'
+  flow-not-found: '<red>No flow named ''<flow>'' exists.'
+  unknown-subcommand: '<red>Unknown subcommand. Run <white>/wf help</white> for a list.'
+  reload-success: '<green>Configuration reloaded.'
+  reload-failed: '<red>Reload failed, see console. Previous configuration kept active.'
+  working: '<gray>Working...'
+  internal-error: '<red>Something went wrong. Ask an admin to check the console.'
+  coming-soon: '<yellow>This subcommand isn''t wired up yet -- coming in a later milestone.'
+  usage: '<red>Usage: <white>/wf <usage></white>'
+
+command:
+  help:
+    header: '<gray>--- <white>WelcomeFlow</white> commands ---'
+    line: '<gray> - <white>/wf <usage></white>: <gray><description>'
+  start:
+    usage: 'start <player> [flow]'
+    description: 'Force-start a flow for a player'
+    success: '<green>Started flow ''<flow>'' for <target>.'
+    already-in-flow: '<red><target> is already in a flow. Use /wf reset first.'
+  reset:
+    usage: 'reset <player>'
+    description: 'Wipe progress and reward flags'
+    success: '<green>Progress reset for <target>.'
+    no-progress: '<yellow><target> has no progress to reset.'
+  skip:
+    usage: 'skip [player]'
+    description: 'Complete the current step'
+    success: '<green>Skipped current step for <target>.'
+    no-active-step: '<yellow><target> has no active step to skip.'
+  status:
+    usage: 'status <player>'
+    description: 'Show current flow/step/progress'
+    header: '<gray>--- Status for <target> ---'
+    no-flow: '<yellow><target> is not currently in a flow.'
+    line-flow: '<gray>Flow: <white><flow>'
+    line-step: '<gray>Step: <white><step> (<index>/<total>)'
+    line-progress: '<gray>Progress: <white><percent>%'
+  stats:
+    usage: 'stats [flow]'
+    description: 'Show the retention funnel'
+    header: '<gray>--- Retention funnel: <flow> ---'
+    line: '<gray><label>: <white><count>'
+  validate:
+    usage: 'validate'
+    description: 'Dry-run config validation'
+    ok: '<green>No problems found. All configs are valid.'
+    header: '<red>Found <count> problem(s):'
+    line: '<red> - [<file>] <path>: <message>'
+  test:
+    usage: 'test <flow>'
+    description: 'Run a flow on yourself without persisting'
+    success: '<green>Running flow ''<flow>'' in test mode. Progress will not be saved.'
+  reload:
+    usage: 'reload'
+    description: 'Safely reload configuration'
+  status-cmd:
+    usage: 'status <player>'
+
+flow:
+  hint: '<yellow>Hint:</yellow> <gray><hint>'
+  abandoned: '<gray>Your progress on ''<flow>'' expired and was reset.'
+
+reward:
+  second-join: '<gold>Welcome back! Here''s a little something for returning.'
+  return-bonus: '<gold>Thanks for coming back after a while -- enjoy this bonus!'

@@ -1,0 +1,40 @@
+name: WelcomeFlow
+version: '${version}'
+main: studios.littlesquad.welcomeflow.WelcomeFlowPlugin
+loader: studios.littlesquad.welcomeflow.WelcomeFlowLoader
+api-version: '1.21'
+author: LittleSquad Studios
+description: 'Turn first joins into returning players.'
+load: POSTWORLD
+folia-supported: false
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Vault:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+# NOTE: Paper plugins cannot declare commands here — YAML command
+# declarations are Bukkit-only and are silently ignored. /welcomeflow and its
+# aliases are registered through the Brigadier registrar in
+# WelcomeFlowPlugin#registerCommand. Permissions, however, ARE read from here.
+permissions:
+  welcomeflow.use:
+    description: 'Use /welcomeflow and see the help output.'
+    default: true
+  welcomeflow.admin:
+    description: 'Full access to every WelcomeFlow admin subcommand.'
+    default: op
+    children:
+      welcomeflow.use: true
+  welcomeflow.*:
+    description: 'Parent node granting every WelcomeFlow permission.'
+    default: op
+    children:
+      welcomeflow.use: true
+      welcomeflow.admin: true

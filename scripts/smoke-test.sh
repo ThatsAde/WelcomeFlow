@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#
+# Platform-contract smoke test.
+#
+# Boots a real Paper server via run-paper, feeds a few commands into the
+# console, then asserts the plugin enabled and answered. This exists because
+# some failures are invisible to both the compiler and MockBukkit:
+#
+#   * Paper plugins cannot declare commands in paper-plugin.yml. Calling
+#     JavaPlugin#getCommand compiles fine against every API version and then
+#     throws UnsupportedOperationException on a live server. MockBukkit
+#     cannot catch it either -- it only understands plugin.yml, so it would
+#     load us down the Bukkit code path where getCommand legitimately works,
+#     and happily pass.
+#   * Whether a server accepts our declared api-version.
+#   * Whether the Paper library loader resolves sqlite-jdbc.
+#
+# Usage:
+#   scripts/smoke-test.sh              # default (1.21.x) server
+#   scripts/smoke-test.sh runServer26  # the 26.x target, once that task exists
+#
+# Exit code is what matters: 0 = the plugin enabled and responded.
+
+set -uo pipefail
+
+TASK="${1:-runServer}"
+LOG="$(dirname "$0")/../build/smoke-test-${TASK}.log"
+mkdir -p "$(dirname "$LOG")"
+
+GRADLEW="./gradlew"
+[[ -f ./gradlew.bat && ! -x ./gradlew ]] && GRADLEW="./gradlew.bat"
+
+echo ">> smoke test: $TASK"
+
+# The server reads console commands on stdin; 'stop' shuts it down cleanly so
+# the Gradle task exits on its own instead of needing a timeout.
+printf 'wf\nwf definitelynotasubcommand\nstop\n' \
+  | "$GRADLEW" "$TASK" --console=plain >"$LOG" 2>&1
+
+strip_ansi() { sed 's/\x1b\[[0-9;]*m//g' "$1"; }
+
+fail() { echo "!! FAIL: $1"; echo "   log: $LOG"; exit 1; }
+
+# --- assertions -------------------------------------------------------------
+
+grep -q "Enabling WelcomeFlow" "$LOG" \
+  || fail "plugin never reached the enable phase"
+
+# The bug this script was written for surfaced exactly here.
+if grep -q "Error occurred while enabling WelcomeFlow" "$LOG"; then
+  echo "--- enable failure ---"
+  grep -A12 "Error occurred while enabling WelcomeFlow" "$LOG" | strip_ansi /dev/stdin
+  fail "plugin threw while enabling"
+fi
+
+grep -q "WelcomeFlow enabled in" "$LOG" \
+  || fail "plugin did not finish enabling"
+
+grep -qE 'Done \([0-9.]+s\)!' "$LOG" \
+  || fail "server never finished booting"
+
+# /wf must produce the help header, proving the command registered AND
+# dispatched AND rendered MiniMessage.
+strip_ansi "$LOG" | grep -q "WelcomeFlow commands" \
+  || fail "/wf did not print help -- command likely not registered"
+
+# An unknown subcommand must be handled, not thrown.
+strip_ansi "$LOG" | grep -q "Unknown subcommand" \
+  || fail "/wf <garbage> was not handled gracefully"
+
+if grep -qE "UnsupportedOperationException|Could not pass event|Exception while executing" "$LOG"; then
+  echo "--- unexpected exception ---"
+  grep -nE "UnsupportedOperationException|Could not pass event|Exception while executing" "$LOG" | head
+  fail "unexpected exception in server log"
+fi
+
+ENABLE_MS="$(strip_ansi "$LOG" | sed -n 's/.*WelcomeFlow enabled in \([0-9]*\)ms.*/\1/p' | tail -1)"
+echo ">> PASS: enabled in ${ENABLE_MS:-?}ms, /wf registered and answering"

@@ -1,0 +1,25 @@
+# Normalise to LF in the repository; check out native on Windows.
+* text=auto
+
+# These are executed by a shell on Linux servers and CI. CRLF here produces
+# the classic "bad interpreter: /bin/sh^M" failure, so they must stay LF
+# regardless of the platform they were committed from.
+gradlew         text eol=lf
+*.sh            text eol=lf
+
+# Windows-only launcher: keep CRLF.
+gradlew.bat     text eol=crlf
+
+# Source and config: LF everywhere for stable diffs.
+*.java          text eol=lf
+*.kts           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.md            text eol=lf
+*.properties    text eol=lf
+
+# Never touch binaries.
+*.jar           binary
+*.png           binary
+*.gif           binary
+*.zip           binary
