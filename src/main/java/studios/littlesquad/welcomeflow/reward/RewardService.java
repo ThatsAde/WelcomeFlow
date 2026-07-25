@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -45,15 +46,23 @@ public final class RewardService implements RewardGranter {
     /** Guards a second grant landing before the first has persisted. */
     private final Set<String> inFlight = new HashSet<>();
 
-    /** Notified after a successful grant, for funnel counters and API events. */
+    /** Notified after a successful grant, for funnel counters. */
     private final Consumer<String> onGranted;
 
+    /**
+     * Fires the cancellable public event; returns true to withhold the
+     * reward's actions. Injected rather than called directly so the reward
+     * logic stays testable without a running server.
+     */
+    private final BiPredicate<Player, String> vetoed;
+
     public RewardService(ActionRunner actionRunner, SessionManager sessionManager, Logger logger,
-                         Consumer<String> onGranted) {
+                         Consumer<String> onGranted, BiPredicate<Player, String> vetoed) {
         this.actionRunner = actionRunner;
         this.sessionManager = sessionManager;
         this.logger = logger;
         this.onGranted = onGranted;
+        this.vetoed = vetoed;
     }
 
     /**
@@ -89,6 +98,16 @@ public final class RewardService implements RewardGranter {
             // Written now rather than at the next periodic flush: a crash
             // seconds after a payout must not resurrect the claim.
             sessionManager.flush(session);
+
+            // Asked after the claim is marked, deliberately. Marking first is
+            // what makes a thrown handler unable to leave the reward payable
+            // twice; the trade is that cancelling means "forfeit", not "ask
+            // again next login". Documented on RetentionRewardEvent.
+            if (vetoed.test(player, rewardKey)) {
+                logger.fine("Reward '" + rewardKey + "' for " + player.getName()
+                        + " was cancelled by another plugin; actions skipped.");
+                return false;
+            }
 
             if (!actions.isEmpty()) {
                 actionRunner.run(actions, ActionContext.ofFlow(player, session, rewardKey, extras));

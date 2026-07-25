@@ -16,6 +16,20 @@ import studios.littlesquad.welcomeflow.session.PlayerSession;
  */
 public interface FlowObserver {
 
+    /**
+     * Vetoes a flow before any state is written.
+     *
+     * <p>Separate from {@link #onFlowStart} because a cancellable event has
+     * to be asked <em>before</em> the decision is committed. Returning false
+     * from any observer stops the flow starting at all.
+     *
+     * @param resumed true when resuming an interrupted run
+     * @return false to prevent the flow from starting
+     */
+    default boolean allowFlowStart(Player player, PlayerSession session, Flow flow, boolean resumed) {
+        return true;
+    }
+
     /** A flow was assigned and begun. */
     default void onFlowStart(Player player, PlayerSession session, Flow flow) {
     }

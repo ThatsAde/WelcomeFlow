@@ -31,12 +31,17 @@ public final class SessionLifecycleListener implements Listener {
      */
     private final BiConsumer<org.bukkit.entity.Player, PlayerSession> onSessionReady;
 
+    /** Post-quit cleanup, keyed by uuid and name: discards any /wf test data. */
+    private final BiConsumer<java.util.UUID, String> onQuitCleanup;
+
     public SessionLifecycleListener(SessionManager sessionManager, FlowEngine flowEngine, Logger logger,
-                                    BiConsumer<org.bukkit.entity.Player, PlayerSession> onSessionReady) {
+                                    BiConsumer<org.bukkit.entity.Player, PlayerSession> onSessionReady,
+                                    BiConsumer<java.util.UUID, String> onQuitCleanup) {
         this.sessionManager = sessionManager;
         this.flowEngine = flowEngine;
         this.logger = logger;
         this.onSessionReady = onSessionReady;
+        this.onQuitCleanup = onQuitCleanup;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -68,6 +73,8 @@ public final class SessionLifecycleListener implements Listener {
                 flowEngine.onQuit(session);
             }
             sessionManager.unloadOnQuit(event.getPlayer().getUniqueId());
+            // An admin who logs out mid-test must not keep the test's progress.
+            onQuitCleanup.accept(event.getPlayer().getUniqueId(), event.getPlayer().getName());
         } catch (RuntimeException e) {
             logger.log(Level.SEVERE, "Failed to save WelcomeFlow session for "
                     + event.getPlayer().getName() + " on quit.", e);

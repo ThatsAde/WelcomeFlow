@@ -34,8 +34,29 @@ echo ">> smoke test: $TASK"
 
 # The server reads console commands on stdin; 'stop' shuts it down cleanly so
 # the Gradle task exits on its own instead of needing a timeout.
-printf 'wf\nwf definitelynotasubcommand\nstop\n' \
-  | "$GRADLEW" "$TASK" --console=plain >"$LOG" 2>&1
+# Start from the shipped defaults every run. Without this the server keeps
+# whatever config a previous run wrote, and we would be testing a stale
+# messages.yml instead of the out-of-box experience a customer gets. (The
+# plugin deliberately never overwrites an owner's edited files, so only the
+# test harness can force this.)
+RUN_DATA="$(dirname "$0")/../run/plugins/WelcomeFlow"
+[[ -d "$RUN_DATA" ]] && rm -rf "$RUN_DATA"
+
+# Commands are fed with gaps so the async ones (stats hits the database and
+# answers on a later tick) can finish before 'stop' tears the scheduler down.
+{
+  sleep 25          # server boot
+  echo 'wf'
+  echo 'wf definitelynotasubcommand'
+  echo 'wf validate'
+  echo 'wf stats'
+  sleep 3
+  echo 'wf reload'
+  sleep 2
+  echo 'wf validate'
+  sleep 2
+  echo 'stop'
+} | "$GRADLEW" "$TASK" --console=plain >"$LOG" 2>&1
 
 strip_ansi() { sed 's/\x1b\[[0-9;]*m//g' "$1"; }
 
@@ -67,6 +88,19 @@ strip_ansi "$LOG" | grep -q "WelcomeFlow commands" \
 # An unknown subcommand must be handled, not thrown.
 strip_ansi "$LOG" | grep -q "Unknown subcommand" \
   || fail "/wf <garbage> was not handled gracefully"
+
+# The bundled config must validate cleanly out of the box -- if the shipped
+# defaults produce warnings, every new customer sees them on first boot.
+strip_ansi "$LOG" | grep -q "Every config file is valid" \
+  || fail "/wf validate did not pass on the bundled default config"
+
+# Reload must work at runtime and leave the config still valid.
+strip_ansi "$LOG" | grep -q "Configuration reloaded" \
+  || fail "/wf reload did not report success"
+
+# Stats must render the funnel rather than erroring.
+strip_ansi "$LOG" | grep -q "Retention funnel" \
+  || fail "/wf stats did not render the funnel"
 
 if grep -qE "UnsupportedOperationException|Could not pass event|Exception while executing" "$LOG"; then
   echo "--- unexpected exception ---"

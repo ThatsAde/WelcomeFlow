@@ -103,8 +103,21 @@ public final class FlowEngine {
         startFlow(player, session, selected);
     }
 
-    /** Begins {@code flow} for the player, firing {@code on-flow-start}. */
+    /**
+     * Begins {@code flow} for the player, firing {@code on-flow-start}.
+     *
+     * <p>Observers are consulted first and any one of them can veto, which is
+     * what backs the cancellable {@code FlowStartEvent}. Nothing is written
+     * before that vote, so a cancelled start leaves no trace.
+     */
     public void startFlow(Player player, PlayerSession session, Flow flow) {
+        if (!allowFlowStart(player, session, flow, false)) {
+            if (config.isDebug()) {
+                logger.info("[flow] start of '" + flow.id() + "' for " + player.getName()
+                        + " was cancelled by another plugin.");
+            }
+            return;
+        }
         FlowProgress progress = FlowProgress.start(session.uuid(), flow.id(), System.currentTimeMillis());
         session.progress(progress);
         session.clearTransientCounters();
@@ -131,11 +144,21 @@ public final class FlowEngine {
             completeFlow(player, session, flow, progress);
             return;
         }
+        // Resume is vetted too: a plugin that cancels onboarding for a player
+        // must not be bypassed simply because they relogged mid-flow.
+        if (!allowFlowStart(player, session, flow, true)) {
+            if (config.isDebug()) {
+                logger.info("[flow] resume of '" + flow.id() + "' for " + player.getName()
+                        + " was cancelled by another plugin.");
+            }
+            return;
+        }
         session.clearTransientCounters();
         if (config.isDebug()) {
             logger.info("[flow] " + player.getName() + " resuming '" + flow.id()
                     + "' at step " + progress.stepIndex() + " (" + progress.stepProgress() + " done).");
         }
+        notifyObservers(observer -> observer.onFlowStart(player, session, flow));
         beginStep(player, session, flow, progress);
     }
 
@@ -365,6 +388,27 @@ public final class FlowEngine {
 
     public void addObserver(FlowObserver observer) {
         observers.add(observer);
+    }
+
+    /**
+     * Asks every observer whether a flow may start.
+     *
+     * <p>An observer that throws is treated as abstaining rather than as a
+     * veto: a broken third-party handler should not be able to silently
+     * disable onboarding for the whole server.
+     */
+    private boolean allowFlowStart(Player player, PlayerSession session, Flow flow, boolean resumed) {
+        for (FlowObserver observer : observers) {
+            try {
+                if (!observer.allowFlowStart(player, session, flow, resumed)) {
+                    return false;
+                }
+            } catch (RuntimeException e) {
+                logger.log(Level.WARNING, "Flow observer " + observer.getClass().getSimpleName()
+                        + " threw while vetting a flow start; treating as no objection.", e);
+            }
+        }
+        return true;
     }
 
     /**
