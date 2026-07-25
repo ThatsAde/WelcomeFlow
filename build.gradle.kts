@@ -21,6 +21,13 @@ description = "Turn first joins into returning players."
 val paperApiVersion = "1.21.4-R0.1-SNAPSHOT"
 val paperApi26Version = "26.1.2.build.69-stable"
 
+// Single source of truth for the one runtime library we need. It is NOT
+// shaded: WelcomeFlowLoader hands the coordinate to Paper's library loader
+// at startup, and reads the version from the generated
+// libraries.properties so this declaration and that download can never
+// drift apart. compileOnly here because the jar ships without it.
+val sqliteJdbcVersion = "3.46.1.3"
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
@@ -53,6 +60,12 @@ dependencies {
         exclude(group = "org.bukkit", module = "bukkit")
     }
 
+    // Provided at runtime by Paper's library loader, so compileOnly. Lets
+    // SqliteStorageProvider use SQLiteDataSource directly instead of going
+    // through DriverManager, whose ServiceLoader-based driver discovery is
+    // unreliable for a library injected into an isolated plugin classloader.
+    compileOnly("org.xerial:sqlite-jdbc:$sqliteJdbcVersion")
+
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -62,6 +75,11 @@ dependencies {
     // 1.21.5). Bumping this requires bumping paperApiVersion in lockstep,
     // which would raise the minimum server version the jar supports.
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.45.1")
+
+    // compileOnly in production (Paper's library loader provides it at
+    // runtime), but the storage tests run a real SQLite database against a
+    // temp file, so they need the driver on the test classpath.
+    testImplementation("org.xerial:sqlite-jdbc:$sqliteJdbcVersion")
 }
 
 // compileOnly (paper-api and friends) is not visible to test sources by
@@ -90,6 +108,7 @@ dependencies {
     verify26CompileOnly("com.github.MilkBowl:VaultAPI:1.7") {
         exclude(group = "org.bukkit", module = "bukkit")
     }
+    verify26CompileOnly("org.xerial:sqlite-jdbc:$sqliteJdbcVersion")
 }
 
 tasks.named<JavaCompile>("compileVerify26Java") {
@@ -115,9 +134,14 @@ tasks.test {
 }
 
 tasks.processResources {
-    val props = mapOf("version" to project.version)
+    val props = mapOf(
+        "version" to project.version,
+        "sqliteJdbcVersion" to sqliteJdbcVersion,
+    )
     inputs.properties(props)
-    filesMatching("paper-plugin.yml") {
+    // libraries.properties is read by WelcomeFlowLoader so the runtime
+    // download and the compileOnly declaration above share one version.
+    filesMatching(listOf("paper-plugin.yml", "libraries.properties")) {
         expand(props)
     }
 }

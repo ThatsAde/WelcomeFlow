@@ -1,5 +1,10 @@
 package studios.littlesquad.welcomeflow.config;
 
+import net.kyori.adventure.bossbar.BossBar;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -8,6 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Level;
 
 /**
@@ -116,5 +124,115 @@ public final class ConfigManager {
 
     public boolean placeholderApiResolveInMessages() {
         return config.getBoolean("placeholderapi.resolve-in-messages", true);
+    }
+
+    // --- named locations --------------------------------------------------
+
+    /**
+     * Resolves a named location from the {@code locations} block, so flows
+     * can say {@code 'teleport: spawn'} instead of repeating coordinates.
+     *
+     * <p>The special name {@code spawn} falls back to the main world's spawn
+     * point when it is not explicitly configured -- that is what makes the
+     * bundled flow work with zero edits.
+     *
+     * @return the location, or {@code null} if the name is unknown or its
+     *     world is not loaded
+     */
+    public Location namedLocation(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        String key = "locations." + name.trim();
+        ConfigurationSection section = config.getConfigurationSection(key);
+        if (section == null) {
+            return "spawn".equalsIgnoreCase(name.trim()) ? defaultSpawn() : null;
+        }
+        World world = Bukkit.getWorld(section.getString("world", ""));
+        if (world == null) {
+            return "spawn".equalsIgnoreCase(name.trim()) ? defaultSpawn() : null;
+        }
+        return new Location(
+                world,
+                section.getDouble("x"),
+                section.getDouble("y"),
+                section.getDouble("z"),
+                (float) section.getDouble("yaw", 0.0),
+                (float) section.getDouble("pitch", 0.0));
+    }
+
+    /** Names declared under {@code locations}, for validation and tab completion. */
+    public Set<String> namedLocationKeys() {
+        ConfigurationSection section = config.getConfigurationSection("locations");
+        return section == null ? Set.of() : Set.copyOf(section.getKeys(false));
+    }
+
+    private Location defaultSpawn() {
+        List<World> worlds = Bukkit.getWorlds();
+        return worlds.isEmpty() ? null : worlds.get(0).getSpawnLocation();
+    }
+
+    // --- UI defaults ------------------------------------------------------
+
+    public int titleDefaultFadeInTicks() {
+        return config.getInt("ui.title.default-fade-in-ticks", 10);
+    }
+
+    public int titleDefaultStayTicks() {
+        return config.getInt("ui.title.default-stay-ticks", 60);
+    }
+
+    public int titleDefaultFadeOutTicks() {
+        return config.getInt("ui.title.default-fade-out-ticks", 20);
+    }
+
+    public boolean bossBarEnabled() {
+        return config.getBoolean("ui.bossbar.enabled", true);
+    }
+
+    public BossBar.Color bossBarColor() {
+        return parseEnum(BossBar.Color.class, config.getString("ui.bossbar.color"), BossBar.Color.BLUE);
+    }
+
+    /**
+     * The bossbar overlay, accepting either Adventure's own names
+     * ({@code NOTCHED_10}, {@code PROGRESS}) or the Bukkit {@code BarStyle}
+     * names most server owners already know ({@code SEGMENTED_10},
+     * {@code SOLID}).
+     *
+     * <p>Supporting both costs one lookup table and removes a whole category
+     * of "my config looks right but the bar is solid" support ticket.
+     */
+    public BossBar.Overlay bossBarStyle() {
+        return parseEnum(
+                BossBar.Overlay.class,
+                normaliseOverlayName(config.getString("ui.bossbar.style")),
+                BossBar.Overlay.NOTCHED_10);
+    }
+
+    /** Maps Bukkit BarStyle spellings onto Adventure's Overlay constants. */
+    private static String normaliseOverlayName(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        return switch (raw.trim().toUpperCase(Locale.ROOT)) {
+            case "SOLID" -> "PROGRESS";
+            case "SEGMENTED_6" -> "NOTCHED_6";
+            case "SEGMENTED_10" -> "NOTCHED_10";
+            case "SEGMENTED_12" -> "NOTCHED_12";
+            case "SEGMENTED_20" -> "NOTCHED_20";
+            default -> raw.trim().toUpperCase(Locale.ROOT);
+        };
+    }
+
+    private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw, E fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Enum.valueOf(type, raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
     }
 }

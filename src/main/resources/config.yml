@@ -45,12 +45,36 @@ ui:
     # Default bossbar settings for flows that don't override them under
     # their own settings.show-checklist-bossbar block.
     enabled: true
+    # PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
     color: BLUE
+    # Accepts either the Bukkit names you may already know
+    # (SOLID, SEGMENTED_6/10/12/20) or Adventure's own
+    # (PROGRESS, NOTCHED_6/10/12/20). Both spellings work.
     style: SEGMENTED_10
   title:
     default-fade-in-ticks: 10
     default-stay-ticks: 60
     default-fade-out-ticks: 20
+
+# Named locations usable from flows as 'teleport: <name>', so coordinates
+# live in one place instead of being repeated in every flow.
+#
+# "spawn" is special: if you don't define it here, it resolves to your main
+# world's spawn point automatically. That's why the bundled flow works
+# without any edits.
+locations: {}
+#  spawn:
+#    world: world
+#    x: 0.5
+#    y: 64
+#    z: 0.5
+#    yaw: 0
+#    pitch: 0
+#  tutorial-end:
+#    world: world
+#    x: 120.5
+#    y: 70
+#    z: -30.5
 
 placeholderapi:
   # When PlaceholderAPI is installed, resolve %placeholder% patterns found

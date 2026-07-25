@@ -1,0 +1,397 @@
+package studios.littlesquad.welcomeflow.flow;
+
+import org.bukkit.entity.Player;
+import studios.littlesquad.welcomeflow.action.ActionContext;
+import studios.littlesquad.welcomeflow.action.ActionRunner;
+import studios.littlesquad.welcomeflow.action.ActionTrigger;
+import studios.littlesquad.welcomeflow.config.ConfigManager;
+import studios.littlesquad.welcomeflow.objective.ObjectiveDefinition;
+import studios.littlesquad.welcomeflow.objective.ObjectiveType;
+import studios.littlesquad.welcomeflow.session.PlayerSession;
+import studios.littlesquad.welcomeflow.session.SessionManager;
+import studios.littlesquad.welcomeflow.storage.FlowProgress;
+import studios.littlesquad.welcomeflow.storage.FlowState;
+import studios.littlesquad.welcomeflow.storage.FunnelEvent;
+import studios.littlesquad.welcomeflow.storage.StorageException;
+import studios.littlesquad.welcomeflow.storage.StorageProvider;
+import studios.littlesquad.welcomeflow.util.Scheduling;
+
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * The state machine: assigns flows, credits objective progress, advances
+ * steps and fires the matching action lists.
+ *
+ * <p>Every state transition in the plugin goes through this class. The
+ * objective listeners are deliberately thin -- they translate a Bukkit event
+ * into a single {@link #creditProgress} call and know nothing about steps,
+ * persistence or actions. That keeps the rules in one readable place instead
+ * of smeared across thirteen listeners.
+ *
+ * <p>Main thread only. Storage writes are delegated to
+ * {@link SessionManager}, which snapshots and writes off-thread.
+ */
+public final class FlowEngine {
+
+    private final FlowRegistry flowRegistry;
+    private final SessionManager sessionManager;
+    private final ActionRunner actionRunner;
+    private final StorageProvider storage;
+    private final Scheduling scheduling;
+    private final ConfigManager config;
+    private final Logger logger;
+
+    public FlowEngine(FlowRegistry flowRegistry, SessionManager sessionManager, ActionRunner actionRunner,
+                      StorageProvider storage, Scheduling scheduling, ConfigManager config, Logger logger) {
+        this.flowRegistry = flowRegistry;
+        this.sessionManager = sessionManager;
+        this.actionRunner = actionRunner;
+        this.storage = storage;
+        this.scheduling = scheduling;
+        this.config = config;
+        this.logger = logger;
+    }
+
+    // --- joining ----------------------------------------------------------
+
+    /**
+     * Decides what happens to a player who just joined: resume an interrupted
+     * flow, or start a newly selected one.
+     */
+    public void onJoin(Player player, PlayerSession session) {
+        countFunnelForSelectableFlow(player, session);
+
+        FlowProgress existing = session.progress();
+        if (existing != null) {
+            Flow flow = flowRegistry.byId(existing.flowId());
+            if (flow == null) {
+                // The flow was renamed or deleted while the player was away.
+                // Dropping the row beats leaving them stuck referencing it.
+                logger.warning("Player " + player.getName() + " had progress in flow '" + existing.flowId()
+                        + "' which no longer exists in flows.yml; clearing their progress.");
+                session.progress(null);
+                return;
+            }
+            if (!flow.settings().resumeOnRejoin()) {
+                restart(player, session, flow);
+                return;
+            }
+            resume(player, session, flow, existing);
+            return;
+        }
+
+        Flow selected = flowRegistry.selectFor(player, session);
+        if (config.isDebug()) {
+            flowRegistry.explainSelection(player, session)
+                    .forEach(line -> logger.info("[flow-select] " + player.getName() + ": " + line));
+        }
+        if (selected == null) {
+            return;
+        }
+        startFlow(player, session, selected);
+    }
+
+    /** Begins {@code flow} for the player, firing {@code on-flow-start}. */
+    public void startFlow(Player player, PlayerSession session, Flow flow) {
+        FlowProgress progress = FlowProgress.start(session.uuid(), flow.id(), System.currentTimeMillis());
+        session.progress(progress);
+        session.clearTransientCounters();
+
+        incrementFunnel(flow.id(), FunnelEvent.STARTED.key());
+        actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_START),
+                ActionContext.ofFlow(player, session, flow.id()));
+        beginStep(player, session, flow, progress);
+    }
+
+    private void restart(Player player, PlayerSession session, Flow flow) {
+        if (config.isDebug()) {
+            logger.info("[flow] " + player.getName() + " restarting flow '" + flow.id()
+                    + "' (resume-on-rejoin is false).");
+        }
+        startFlow(player, session, flow);
+    }
+
+    private void resume(Player player, PlayerSession session, Flow flow, FlowProgress progress) {
+        if (flow.isFinished(progress.stepIndex())) {
+            // Config shrank while they were away; treat as complete rather than
+            // leaving them parked past the last step forever.
+            completeFlow(player, session, flow, progress);
+            return;
+        }
+        session.clearTransientCounters();
+        if (config.isDebug()) {
+            logger.info("[flow] " + player.getName() + " resuming '" + flow.id()
+                    + "' at step " + progress.stepIndex() + " (" + progress.stepProgress() + " done).");
+        }
+        beginStep(player, session, flow, progress);
+    }
+
+    /** Fires {@code on-step-start} for the step the player is now on. */
+    private void beginStep(Player player, PlayerSession session, Flow flow, FlowProgress progress) {
+        Step step = flow.stepAt(progress.stepIndex());
+        if (step == null) {
+            completeFlow(player, session, flow, progress);
+            return;
+        }
+        incrementFunnel(flow.id(), FunnelEvent.stepReachedKey(step.id()));
+        actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_START), contextFor(player, session, flow, step));
+        scheduleHint(player, session, flow, step, progress.stepIndex());
+        schedulePlayTimeCompletion(player, session, flow, step, progress.stepIndex());
+    }
+
+    /**
+     * Drives a {@link ObjectiveType#PLAY_TIME} step with a single one-shot
+     * task instead of a repeating timer.
+     *
+     * <p>The objective is "seconds online this session", so the completion
+     * time is known the moment the step starts -- there is nothing to poll
+     * for. Like the hint task, it re-checks on fire that the player is still
+     * on the same step of the same flow, so a task left over from before a
+     * relog or a {@code /wf skip} cannot credit the wrong step.
+     */
+    private void schedulePlayTimeCompletion(Player player, PlayerSession session, Flow flow, Step step,
+                                            int stepIndex) {
+        if (step.objective().type() != ObjectiveType.PLAY_TIME) {
+            return;
+        }
+        long delayTicks = Math.max(1L, step.requiredAmount() * 20L);
+        scheduling.runSyncLater(() -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            PlayerSession current = sessionManager.get(session.uuid());
+            if (current == null || current.progress() == null) {
+                return;
+            }
+            FlowProgress progress = current.progress();
+            if (!progress.flowId().equals(flow.id()) || progress.stepIndex() != stepIndex) {
+                return;
+            }
+            creditProgress(player, ObjectiveType.PLAY_TIME, step.requiredAmount());
+        }, delayTicks);
+    }
+
+    /**
+     * Schedules the step's hint, if it has one.
+     *
+     * <p>One-shot task per step rather than a repeating checker, and it
+     * re-verifies on fire that the player is still online and still on the
+     * same step -- otherwise a hint for step 2 could arrive while the player
+     * is on step 5.
+     */
+    private void scheduleHint(Player player, PlayerSession session, Flow flow, Step step, int stepIndex) {
+        if (!step.hasHint()) {
+            return;
+        }
+        long delayTicks = Math.max(1L, step.hintAfterMillis() / 50L);
+        scheduling.runSyncLater(() -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            PlayerSession current = sessionManager.get(session.uuid());
+            if (current == null || current.progress() == null) {
+                return;
+            }
+            FlowProgress progress = current.progress();
+            if (!progress.flowId().equals(flow.id()) || progress.stepIndex() != stepIndex) {
+                return; // Already moved on; the hint is stale.
+            }
+            actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_PROGRESS),
+                    contextFor(player, current, flow, step));
+        }, delayTicks);
+    }
+
+    // --- progress ---------------------------------------------------------
+
+    /**
+     * Credits objective progress if the player's current step is waiting for
+     * exactly this kind of event.
+     *
+     * <p>This is the single entry point the objective listeners use. It
+     * verifies the player has a live session and an active flow, that the
+     * current step's objective type matches, and that the type-specific filter
+     * passes, before touching any state.
+     *
+     * @param type the objective type the calling listener represents
+     * @param amount units observed; ignored when not positive
+     * @param filter type-specific check against the step's definition, e.g.
+     *     "is this the material the step asked for"
+     */
+    public void creditProgress(Player player, ObjectiveType type, int amount,
+                               Predicate<ObjectiveDefinition> filter) {
+        if (amount <= 0) {
+            return;
+        }
+        PlayerSession session = sessionManager.get(player.getUniqueId());
+        if (session == null || session.progress() == null) {
+            return;
+        }
+        FlowProgress progress = session.progress();
+        Flow flow = flowRegistry.byId(progress.flowId());
+        if (flow == null) {
+            return;
+        }
+        Step step = flow.stepAt(progress.stepIndex());
+        if (step == null || step.objective().type() != type) {
+            return;
+        }
+        if (filter != null && !filter.test(step.objective())) {
+            return;
+        }
+
+        progress.addStepProgress(amount);
+        progress.updatedAt(System.currentTimeMillis());
+        session.markDirty();
+
+        if (progress.stepProgress() >= step.requiredAmount()) {
+            completeStep(player, session, flow, step, progress);
+        } else {
+            actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_PROGRESS),
+                    contextFor(player, session, flow, step));
+        }
+    }
+
+    /** Convenience for listeners with no filtering to do. */
+    public void creditProgress(Player player, ObjectiveType type, int amount) {
+        creditProgress(player, type, amount, null);
+    }
+
+    /**
+     * Force-completes the player's current step, regardless of progress
+     * ({@code /wf skip} and the API's {@code completeObjective}).
+     *
+     * @return true if a step was completed
+     */
+    public boolean forceCompleteCurrentStep(Player player) {
+        PlayerSession session = sessionManager.get(player.getUniqueId());
+        if (session == null || session.progress() == null) {
+            return false;
+        }
+        FlowProgress progress = session.progress();
+        Flow flow = flowRegistry.byId(progress.flowId());
+        if (flow == null) {
+            return false;
+        }
+        Step step = flow.stepAt(progress.stepIndex());
+        if (step == null) {
+            return false;
+        }
+        progress.stepProgress(step.requiredAmount());
+        completeStep(player, session, flow, step, progress);
+        return true;
+    }
+
+    private void completeStep(Player player, PlayerSession session, Flow flow, Step step, FlowProgress progress) {
+        actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_COMPLETE),
+                contextFor(player, session, flow, step));
+
+        progress.advanceStep();
+        progress.updatedAt(System.currentTimeMillis());
+        session.clearTransientCounters();
+        session.markDirty();
+        // Step boundaries are the natural durability point: flush now so a
+        // crash costs at most one partially-done step.
+        sessionManager.flush(session);
+
+        if (flow.isFinished(progress.stepIndex())) {
+            completeFlow(player, session, flow, progress);
+        } else {
+            beginStep(player, session, flow, progress);
+        }
+    }
+
+    private void completeFlow(Player player, PlayerSession session, Flow flow, FlowProgress progress) {
+        progress.state(FlowState.COMPLETED);
+        progress.updatedAt(System.currentTimeMillis());
+        session.addCompletedFlow(flow.id());
+        session.markDirty();
+        sessionManager.flush(session);
+
+        incrementFunnel(flow.id(), FunnelEvent.COMPLETED.key());
+        actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_COMPLETE),
+                ActionContext.ofFlow(player, session, flow.id()));
+
+        // Clearing the active pointer is what stops the finished flow being
+        // resumed on the next login; the COMPLETED row stays for stats and the
+        // previous-flow-completed condition.
+        session.progress(null);
+    }
+
+    // --- quitting ---------------------------------------------------------
+
+    /**
+     * Records where a player dropped out. The row stays {@link FlowState#ACTIVE}
+     * so they can resume; the startup sweep reclassifies it as abandoned only
+     * once the flow's window has passed.
+     */
+    public void onQuit(PlayerSession session) {
+        FlowProgress progress = session.progress();
+        if (progress == null) {
+            return;
+        }
+        Flow flow = flowRegistry.byId(progress.flowId());
+        if (flow == null) {
+            return;
+        }
+        Step step = flow.stepAt(progress.stepIndex());
+        if (step != null) {
+            incrementFunnel(flow.id(), FunnelEvent.stepAbandonedKey(step.id()));
+        }
+    }
+
+    // --- helpers ----------------------------------------------------------
+
+    private ActionContext contextFor(Player player, PlayerSession session, Flow flow, Step step) {
+        FlowProgress progress = session.progress();
+        int done = progress == null ? 0 : progress.stepProgress();
+        return new ActionContext(player, session, flow.id(), step.id(), done, step.requiredAmount());
+    }
+
+    /**
+     * Credits {@code joined} against whichever flow this player would be
+     * offered, so the funnel's first stage is comparable with {@code started}.
+     * Counting against every flow would make the numbers meaningless.
+     */
+    private void countFunnelForSelectableFlow(Player player, PlayerSession session) {
+        Flow candidate = session.progress() != null
+                ? flowRegistry.byId(session.progress().flowId())
+                : flowRegistry.selectFor(player, session);
+        if (candidate != null) {
+            incrementFunnel(candidate.id(), FunnelEvent.JOINED.key());
+        }
+    }
+
+    /** Fire-and-forget counter bump; never blocks the main thread. */
+    public void incrementFunnel(String flowId, String eventKey) {
+        scheduling.runAsync(() -> {
+            try {
+                storage.incrementFunnel(flowId, eventKey);
+            } catch (StorageException e) {
+                logger.log(Level.WARNING, "Could not record funnel event '" + eventKey
+                        + "' for flow '" + flowId + "'.", e);
+            }
+        });
+    }
+
+    public FlowRegistry registry() {
+        return flowRegistry;
+    }
+
+    /**
+     * The player's live session, or {@code null}.
+     *
+     * <p>Exposed for the objective listeners that need the session itself
+     * (rather than just to credit progress) -- the movement listener banks
+     * fractional block distances there.
+     */
+    public PlayerSession sessionFor(Player player) {
+        return sessionManager.get(player.getUniqueId());
+    }
+
+    /** Resolves a named location for {@link ObjectiveType#REACH_LOCATION}. */
+    public org.bukkit.Location namedLocation(String name) {
+        return config.namedLocation(name);
+    }
+}
