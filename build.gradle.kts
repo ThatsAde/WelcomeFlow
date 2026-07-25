@@ -21,6 +21,10 @@ description = "Turn first joins into returning players."
 val paperApiVersion = "1.21.4-R0.1-SNAPSHOT"
 val paperApi26Version = "26.1.2.build.69-stable"
 
+// The matching *server* build for runServer26. Kept next to the API version
+// so the compile target and the server we prove it on stay in step.
+val paper26ServerVersion = "26.1.2"
+
 // Single source of truth for the one runtime library we need. It is NOT
 // shaded: WelcomeFlowLoader hands the coordinate to Paper's library loader
 // at startup, and reads the version from the generated
@@ -151,9 +155,14 @@ tasks.withType<JavaCompile> {
 }
 
 // -----------------------------------------------------------------------
-// Local dev server (1.21.x line). A second task targeting a 26.x build
-// is added in M5, once the api-version acceptance question (see PLAN.md)
-// is settled empirically.
+// Local dev servers. Two of them, because the compatibility claim on the
+// resource page is "one jar, 1.21.4 through 26.x" and the only honest way
+// to back that is to boot the same jar on both lines.
+//
+// runServer   -> 1.21.4, the oldest supported server (Java 21)
+// runServer26 -> 26.1.2, the newest        (Java 25 -- Paper 26.x requires it)
+//
+// scripts/smoke-test.sh drives either one.
 // -----------------------------------------------------------------------
 tasks.named<RunServer>("runServer") {
     minecraftVersion("1.21.4")
@@ -163,4 +172,30 @@ tasks.named<RunServer>("runServer") {
     // already running an IDE and a game client -- run-paper's default lets G1
     // reserve enough virtual space to fail outright on a loaded box.
     jvmArgs("-Xms512M", "-Xmx1G")
+}
+
+tasks.register<RunServer>("runServer26") {
+    group = "welcomeflow"
+    description = "Runs the SAME jar on a Paper 26.x server, to verify cross-version compatibility."
+
+    minecraftVersion(paper26ServerVersion)
+    // Separate run directory: the two servers have incompatible world data,
+    // and sharing one would make each run corrupt the other's.
+    runDirectory.set(layout.projectDirectory.dir("run26"))
+    jvmArgs("-Xms512M", "-Xmx1G")
+
+    // The auto-configured runServer task gets this from run-paper's
+    // convention; a task we register ourselves does not, and silently boots
+    // with zero plugins if we forget. This is deliberately the SAME artifact
+    // runServer uses -- building a separate 26.x jar would defeat the point.
+    pluginJars(tasks.jar.flatMap { it.archiveFile })
+
+    // Paper 26.x requires Java 25. Our jar is Java 21 bytecode, which a Java
+    // 25 JVM loads happily -- that asymmetry is exactly what this task exists
+    // to demonstrate.
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        }
+    )
 }

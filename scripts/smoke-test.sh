@@ -39,8 +39,18 @@ echo ">> smoke test: $TASK"
 # messages.yml instead of the out-of-box experience a customer gets. (The
 # plugin deliberately never overwrites an owner's edited files, so only the
 # test harness can force this.)
-RUN_DATA="$(dirname "$0")/../run/plugins/WelcomeFlow"
+ROOT="$(dirname "$0")/.."
+# runServer -> run/, runServer26 -> run26/ (the two servers have incompatible
+# world data, so they cannot share a directory).
+if [[ "$TASK" == "runServer26" ]]; then RUN_DIR="$ROOT/run26"; else RUN_DIR="$ROOT/run"; fi
+
+RUN_DATA="$RUN_DIR/plugins/WelcomeFlow"
 [[ -d "$RUN_DATA" ]] && rm -rf "$RUN_DATA"
+
+# A first run has no eula.txt and the server exits immediately after writing
+# one. Pre-accepting it keeps the smoke test single-pass on a fresh checkout.
+mkdir -p "$RUN_DIR"
+printf 'eula=true\n' > "$RUN_DIR/eula.txt"
 
 # Commands are fed with gaps so the async ones (stats hits the database and
 # answers on a later tick) can finish before 'stop' tears the scheduler down.
@@ -101,6 +111,16 @@ strip_ansi "$LOG" | grep -q "Configuration reloaded" \
 # Stats must render the funnel rather than erroring.
 strip_ansi "$LOG" | grep -q "Retention funnel" \
   || fail "/wf stats did not render the funnel"
+
+# The plugin's own classes must not appear in any stack trace. This is what
+# caught Paper 26.x rejecting Maven Central in the library loader -- the
+# plugin still enabled, so every other assertion passed while a RuntimeException
+# was being thrown out of WelcomeFlowLoader on every boot.
+if grep -qE "^\s+at .*studios\.littlesquad\.welcomeflow" "$LOG"; then
+  echo "--- WelcomeFlow code appears in a stack trace ---"
+  grep -B10 -E "^\s+at .*studios\.littlesquad\.welcomeflow" "$LOG" | strip_ansi /dev/stdin | head -20
+  fail "an exception was thrown from WelcomeFlow code"
+fi
 
 if grep -qE "UnsupportedOperationException|Could not pass event|Exception while executing" "$LOG"; then
   echo "--- unexpected exception ---"
