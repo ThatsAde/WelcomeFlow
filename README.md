@@ -222,7 +222,7 @@ instead of silently evaluating to false.
 | `KILL_ENTITY` | | `entity` | mobs killed |
 | `RUN_COMMAND` | `pattern` | | matching commands run |
 | `SEND_CHAT` | | | chat messages sent |
-| `OPEN_INVENTORY` | | | containers opened |
+| `OPEN_INVENTORY` | | | containers opened, own inventory closed |
 | `INTERACT_BLOCK` | | `material` | right clicks on blocks |
 | `REACH_LOCATION` | `location` | `radius` | arrival at a named location |
 | `PLAY_TIME` | | | seconds online this session |
@@ -250,9 +250,12 @@ Notes worth knowing:
   Matching ignores case, a leading slash, and repeated spaces, so
   `/Kit Starter` satisfies `pattern: "/kit starter"`. A trailing `*` matches
   by prefix: `pattern: "/kit *"`.
-- **`OPEN_INVENTORY`** does not fire for a player's own survival inventory.
-  The client handles that locally and no packet reaches the server. It fires
-  for chests, crafting tables, furnaces, shop GUIs and similar.
+- **`OPEN_INVENTORY`** counts a container the moment it opens (chests,
+  crafting tables, furnaces, shop GUIs and similar). A player's own inventory
+  is counted when they **close** it, because opening it sends nothing to the
+  server: the client draws that screen locally. In practice a player who
+  presses E and then Esc satisfies the step. A close caused by death,
+  teleport or disconnect does not count.
 - **`PICKUP_ITEM`** credits the whole stack. Picking up 12 logs counts as 12.
 - **`KILL_ENTITY`** credits the killer only, never environmental deaths.
 - **Only the objective types your flows actually use** get an event listener.
@@ -538,9 +541,9 @@ Run `/wf status <player>`. It states the reason directly, usually
 
 **A tutorial step never completes.**
 For `RUN_COMMAND`, check the pattern with `/wf validate` and remember that
-matching happens on what the player types. For `OPEN_INVENTORY`, note that a
-player's own inventory does not fire a server event; use a chest or crafting
-table.
+matching happens on what the player types. For `OPEN_INVENTORY`, note that
+the player's own inventory only registers once they close it again; a
+container registers as soon as it opens.
 
 **Config changes did not take effect.**
 `/wf reload` re-reads all three files and reports any problems. Active

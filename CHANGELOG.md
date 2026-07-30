@@ -111,7 +111,8 @@ First public release.
   unwritable data folder, rather than at the moment a player joins.
 - `conditional` supports a fixed set of five conditions rather than a general
   expression language.
-- `OPEN_INVENTORY` does not fire for a player's own survival inventory,
-  because the client handles that locally and no packet reaches the server.
+- `OPEN_INVENTORY` registers a player's own inventory on close rather than on
+  open, because opening it sends no packet to the server. Containers still
+  register on open.
 - MySQL storage is planned for 1.1 behind the existing `StorageProvider`
   interface, so it will be a configuration change rather than a migration.
