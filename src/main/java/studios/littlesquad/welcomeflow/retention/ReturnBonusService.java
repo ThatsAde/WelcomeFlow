@@ -13,20 +13,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Rewards a player who comes back after being away -- the recurring half of
+ * Rewards a player who comes back after being away: the recurring half of
  * the retention layer, and the one that keeps working past a player's second
  * session.
  *
  * <p>Three independent limits, all of which must pass:
  * <ul>
- *   <li><strong>Time away</strong> -- at least {@code minimum-hours-away}
+ *   <li><strong>Time away</strong>: at least {@code minimum-hours-away}
  *       since their last logout. Measured from the {@code lastSeenAt} value
  *       captured at load time, <em>before</em> this join overwrote it.</li>
- *   <li><strong>Cooldown</strong> -- at least {@code cooldown-hours} since
+ *   <li><strong>Cooldown</strong>: at least {@code cooldown-hours} since
  *       their previous claim. Without this a player could log out and back in
  *       every 12 hours forever; the cooldown lets an owner set a floor
  *       independent of the away requirement.</li>
- *   <li><strong>Max claims</strong> -- a lifetime cap, or unlimited at 0.</li>
+ *   <li><strong>Max claims</strong>: a lifetime cap, or unlimited at 0.</li>
  * </ul>
  */
 public final class ReturnBonusService {

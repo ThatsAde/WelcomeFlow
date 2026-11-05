@@ -13,8 +13,8 @@ import java.util.UUID;
  * Public entry point for other plugins.
  *
  * <p>This is the one static singleton in WelcomeFlow; everything behind it is
- * constructor-injected. Every method here is <strong>main-thread only</strong>
- * -- they read live session state that the engine mutates on the main thread,
+ * constructor-injected. Every method here is <strong>main-thread only</strong>,
+ * because they read live session state that the engine mutates on the main thread,
  * so calling them from an async task is a data race.
  *
  * <h2>Getting started</h2>
@@ -92,7 +92,7 @@ public final class WelcomeFlowAPI {
      * The player's live session, present only while they are online.
      *
      * <p>Prefer the narrower helpers below unless you genuinely need the
-     * session object -- they are stable across internal refactors.
+     * session object, so they are stable across internal refactors.
      */
     public static Optional<PlayerSession> getSession(UUID uuid) {
         return isReady()
@@ -164,7 +164,7 @@ public final class WelcomeFlowAPI {
     /**
      * Starts a flow for a player, ignoring its conditions.
      *
-     * <p>Does nothing if they are already in a flow -- reset them first with
+     * <p>Does nothing if they are already in a flow; reset them first with
      * {@link #resetPlayer(Player)} if you mean to replace it.
      *
      * @param flowId id from flows.yml

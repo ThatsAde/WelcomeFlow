@@ -15,7 +15,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  *
  * <p>Two filters matter here and both prevent double-counting:
  * <ul>
- *   <li>Only {@link Action#RIGHT_CLICK_BLOCK} counts -- left-clicking is
+ *   <li>Only {@link Action#RIGHT_CLICK_BLOCK} counts; left-clicking is
  *       block-breaking, which BREAK_BLOCK already covers.</li>
  *   <li>Only the main hand counts. {@code PlayerInteractEvent} fires twice for
  *       a single right-click (once per hand), so without this a "click the

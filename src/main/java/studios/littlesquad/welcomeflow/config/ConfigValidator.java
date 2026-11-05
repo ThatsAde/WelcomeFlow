@@ -19,7 +19,7 @@ import studios.littlesquad.welcomeflow.action.ActionSpec;
 
 /**
  * Re-validates the whole configuration on demand and reports every problem
- * with file, path and an actionable message -- never a raw stacktrace.
+ * with file, path and an actionable message, never a raw stacktrace.
  *
  * <p>Most structural validation happens inside {@link FlowRegistry} as a
  * by-product of parsing (unknown action types, bad materials, duplicate step
@@ -28,8 +28,8 @@ import studios.littlesquad.welcomeflow.action.ActionSpec;
  * the checks that only make sense across the whole config:
  * <ul>
  *   <li>MiniMessage that will not parse</li>
- *   <li>flows referencing a {@code previous-flow-completed} that does not exist
- *       -- an unreachable flow</li>
+ *   <li>flows referencing a {@code previous-flow-completed} that does not exist,
+ *       which makes the flow unreachable</li>
  *   <li>named locations referenced by objectives but never defined</li>
  *   <li>soft-dependencies used in config but not installed</li>
  * </ul>
@@ -150,7 +150,7 @@ public final class ConfigValidator {
         } catch (RuntimeException e) {
             issues.add(ConfigIssue.error(file, path,
                     "Invalid MiniMessage: " + e.getMessage()
-                            + " -- check for an unclosed tag or a mistyped colour name."));
+                            + ". Check for an unclosed tag or a mistyped colour name."));
         }
     }
 

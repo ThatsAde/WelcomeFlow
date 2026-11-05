@@ -1,7 +1,7 @@
 # =============================================================================
 #  WelcomeFlow - flows.yml
 #  Flow definitions. The "welcome" flow below is a complete, working
-#  6-step tutorial that requires zero edits to be useful -- it just needs
+#  6-step tutorial that requires zero edits to be useful; it just needs
 #  a /kit starter command to exist (Essentials, CMI, etc.) for step 6 to
 #  be completable; remove that step if you don't run a kits plugin.
 #
@@ -11,7 +11,7 @@
 #
 #  1) Compact string form: 'type: field;;field;;field'
 #     A single ";;" always separates fields, for both text and numeric
-#     fields alike -- there is no special-casing to remember. A literal
+#     fields alike; there is no special-casing to remember. A literal
 #     ";;" inside a field (rare, e.g. inside MiniMessage text) is written
 #     as "\;;".
 #       'title: <white>Hello;;<gray>subtitle;;10;;60;;20'
@@ -85,7 +85,7 @@ flows:
         objective:
           type: OPEN_INVENTORY
         on-step-complete:
-          - 'message: <green>OK Last step -- claim your starter kit.'
+          - 'message: <green>OK Last step: claim your starter kit.'
 
       - id: rewards
         display: "<white>Claim your starter kit"

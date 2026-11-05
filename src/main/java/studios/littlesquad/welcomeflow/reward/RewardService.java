@@ -22,10 +22,10 @@ import java.util.logging.Logger;
  *
  * <p>There are deliberately <em>two</em> layers of guard:
  * <ol>
- *   <li><strong>Persistent</strong> -- a flag on the player's record, checked
+ *   <li><strong>Persistent</strong>: a flag on the player's record, checked
  *       by the calling service and set here. This survives restarts and is
  *       the real guarantee.</li>
- *   <li><strong>In-flight</strong> -- an in-memory set keyed by player and
+ *   <li><strong>In-flight</strong>: an in-memory set keyed by player and
  *       reward. The persistent flag is only durable once the async flush
  *       completes; without this, two grants in the same tick could both
  *       observe an unclaimed flag and both pay out.</li>
@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  *
  * <p>The claim is marked and the write requested <em>before</em> the reward
  * actions run, so an action that throws cannot leave the reward claimable
- * again -- paying twice is far worse than a player missing a title.
+ * again: paying twice is far worse than a player missing a title.
  *
  * <p>Main thread only, which is what makes the plain {@link HashSet} safe.
  */

@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList;
  * Base class for every WelcomeFlow event.
  *
  * <p>All events fire on the main thread, after the state change they
- * describe has been applied -- with the exception of the cancellable ones,
+ * describe has been applied, with the exception of the cancellable ones,
  * which fire before. Check each event's own documentation.
  *
  * <p>Example:

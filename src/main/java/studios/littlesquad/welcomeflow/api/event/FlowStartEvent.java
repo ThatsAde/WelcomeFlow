@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList;
  * Fired when a flow is about to start for a player.
  *
  * <p><strong>Cancellable.</strong> This fires <em>before</em> any state is
- * written, so cancelling leaves the player with no active flow at all -- use
+ * written, so cancelling leaves the player with no active flow at all; use
  * it to exempt staff, VIPs, or players arriving from a lobby that already
  * onboarded them.
  *

@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Rewards a player's Nth login -- the "they came back once" half of the
+ * Rewards a player's Nth login: the "they came back once" half of the
  * retention layer.
  *
  * <p>Two properties make this safe to attach real rewards to:
@@ -87,7 +87,7 @@ public final class SecondJoinService {
      *
      * <p>{@code firstSessionSeconds} is written when the player's first
      * session ends. A player still inside their very first session therefore
-     * has {@code 0} here -- but they also have {@code joinCount == 1}, so they
+     * has {@code 0} here, but they also have {@code joinCount == 1}, so they
      * never reach this check. Reading {@code 0} at join #2 or later genuinely
      * means "their first session was too short to have been recorded", which
      * correctly fails the requirement.

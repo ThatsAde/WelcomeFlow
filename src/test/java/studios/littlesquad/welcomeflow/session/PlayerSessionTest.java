@@ -27,7 +27,7 @@ class PlayerSessionTest {
     class Accumulator {
 
         @Test
-        @DisplayName("banks fractions and yields whole units -- how WALK_DISTANCE counts")
+        @DisplayName("banks fractions and yields whole units, as WALK_DISTANCE counts")
         void banksFractions() {
             PlayerSession session = session(0L, 0L);
 

@@ -30,7 +30,7 @@ public final class WelcomeFlowLoader implements PluginLoader {
     private static final String SQLITE_COORDINATE_KEY = "sqlite-jdbc.coordinates";
 
     /**
-     * Google's Maven Central mirror -- the value of Paper's own
+     * Google's Maven Central mirror: the value of Paper's own
      * {@code MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR}.
      *
      * <p>Written as a literal rather than referencing that constant, and both
@@ -40,7 +40,7 @@ public final class WelcomeFlowLoader implements PluginLoader {
      *   <li><strong>Why not repo1.maven.org.</strong> Paper 26.x <em>throws</em>
      *       when a plugin names Maven Central directly ("Use of Maven Central
      *       as a CDN is against the Maven Central Terms of Service"). 1.21.x
-     *       only warned, so the compileVerify26Java gate never saw it -- the
+     *       only warned, so the compileVerify26Java gate never saw it; the
      *       signature did not change, only the runtime policy did.</li>
      *   <li><strong>Why not the constant.</strong> The field is present in the
      *       1.21.4 <em>API snapshot</em> but absent from released 1.21.4

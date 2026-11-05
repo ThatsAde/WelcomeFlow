@@ -22,7 +22,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  *
  * <p>Closing it, however, does send a packet. So the player's own inventory is
  * credited on {@link InventoryCloseEvent} instead, guarded on
- * {@link InventoryType#CRAFTING} -- the view type of the default player screen.
+ * {@link InventoryType#CRAFTING}, the view type of the default player screen.
  * A container is credited on open and skipped on close, so nothing is counted
  * twice.
  *

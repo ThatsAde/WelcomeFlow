@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  * <p>Only the types a loaded flow actually uses get a listener, per the
  * "do not create listeners for objective types that are unused by any loaded
  * flow" requirement. On a server whose only flow is walk-and-break, this
- * registers two handlers instead of eleven -- so the events the plugin does
+ * registers two handlers instead of eleven, so the events the plugin does
  * not care about cost literally nothing, not even a no-op call.
  *
  * <p>{@link #registerFor} is safe to call repeatedly: it tears down the

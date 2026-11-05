@@ -16,7 +16,7 @@ public interface ActionFactory {
 
     /**
      * The {@code type} this factory handles, lowercase and without any
-     * bracketed modifier -- e.g. {@code "command"} handles both
+     * bracketed modifier, e.g. {@code "command"} handles both
      * {@code command:} and {@code command[console]:}.
      */
     String type();

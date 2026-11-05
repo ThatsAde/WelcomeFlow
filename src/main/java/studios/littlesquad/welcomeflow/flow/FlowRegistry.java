@@ -163,7 +163,7 @@ public final class FlowRegistry {
             id = id.trim();
             if (!seenIds.add(id.toLowerCase(Locale.ROOT))) {
                 issues.add(ConfigIssue.error(FILE, path + ".id",
-                        "Duplicate step id '" + id + "' -- ids must be unique within a flow."));
+                        "Duplicate step id '" + id + "'. Ids must be unique within a flow."));
                 continue;
             }
 
@@ -221,7 +221,7 @@ public final class FlowRegistry {
             amount = 1;
         }
 
-        // Flag keys that this type will ignore -- usually a copy-paste leftover.
+        // Flag keys that this type will ignore, usually a copy-paste leftover.
         for (Object key : map.keySet()) {
             String name = String.valueOf(key);
             if (name.equals("type") || name.equals("amount")) {

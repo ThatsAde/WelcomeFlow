@@ -15,7 +15,7 @@ import java.util.Map;
  * <p>Deliberately carries {@code flowId}/{@code stepId} as plain strings
  * rather than {@code Flow}/{@code Step} objects. Actions need identity and
  * progress numbers, not the whole definition, and keeping the types out
- * avoids a package cycle between {@code action} and {@code flow} -- the
+ * avoids a package cycle between {@code action} and {@code flow}: the
  * flow model already depends on actions to hold its trigger lists.
  *
  * @param player the player the action runs for; never null (console-only
@@ -28,7 +28,7 @@ import java.util.Map;
  * @param stepRequired units the current step needs, or {@code 0} when not
  *     applicable
  * @param extras additional MiniMessage placeholders for contexts that have
- *     something extra to offer -- the return bonus supplies
+ *     something extra to offer; the return bonus supplies
  *     {@code <time-away>}. Empty for ordinary flow contexts, so no other
  *     call site carries a field meaningless to it.
  */

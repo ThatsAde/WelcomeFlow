@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  *
  * <p>Each action is individually guarded. One misbehaving action logs a
  * warning and the list continues, rather than silently dropping the steps
- * after it -- a broken {@code give-item} should not stop the player being
+ * after it: a broken {@code give-item} should not stop the player being
  * told they finished the tutorial.
  */
 public final class ActionRunner {

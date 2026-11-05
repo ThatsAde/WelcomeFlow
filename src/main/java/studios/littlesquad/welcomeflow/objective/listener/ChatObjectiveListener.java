@@ -14,11 +14,11 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  * Handles {@link ObjectiveType#SEND_CHAT}.
  *
  * <p>Uses Paper's {@link AsyncChatEvent} rather than the deprecated
- * {@code AsyncPlayerChatEvent} -- the legacy event carries a String message
+ * {@code AsyncPlayerChatEvent}: the legacy event carries a String message
  * and is exactly the sort of API 26.x has been removing.
  *
  * <p><strong>This event fires off the main thread.</strong> Everything the
- * engine does -- session lookup, step advancement, running actions -- touches
+ * engine does (session lookup, step advancement, running actions) touches
  * Bukkit API and mutable session state, so the credit call is hopped back to
  * the main thread. Calling {@code creditProgress} directly from here would be
  * a data race against every other listener and a violation of the "never call

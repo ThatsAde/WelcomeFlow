@@ -15,7 +15,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf start <player> [flow]} -- force-starts a flow, ignoring its
+ * {@code /wf start <player> [flow]}: force-starts a flow, ignoring its
  * conditions.
  *
  * <p>With no flow named, runs the normal selection logic instead, which is

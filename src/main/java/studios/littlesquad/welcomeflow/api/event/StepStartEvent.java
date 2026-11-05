@@ -47,7 +47,7 @@ public class StepStartEvent extends WelcomeFlowEvent {
         return stepCount;
     }
 
-    /** Units already credited -- non-zero when resuming a part-done step. */
+    /** Units already credited; non-zero when resuming a part-done step. */
     public int getProgress() {
         return progress;
     }

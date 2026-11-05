@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Exercises the real SQLite provider against a temp-file database. No
- * Bukkit involved, so this needs neither MockBukkit nor a server -- which
+ * Bukkit involved, so this needs neither MockBukkit nor a server, which
  * makes it the fastest and most trustworthy layer of the test suite.
  */
 @DisplayName("SqliteStorageProvider")
@@ -137,7 +137,7 @@ class SqliteStorageProviderTest {
         }
 
         @Test
-        @DisplayName("active progress round-trips exactly -- the resume guarantee")
+        @DisplayName("active progress round-trips exactly: the resume guarantee")
         void activeProgressRoundTrips() {
             UUID uuid = UUID.randomUUID();
             FlowProgress progress = new FlowProgress(uuid, "welcome", 3, 2, FlowState.ACTIVE, 100L, 200L);

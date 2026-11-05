@@ -20,7 +20,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  * which normalises case, the leading slash and repeated whitespace, and
  * supports a trailing {@code *} wildcard. Without that normalisation
  * {@code /Kit Starter} would silently fail to satisfy a
- * {@code pattern: "/kit starter"} step -- the exact class of bug that
+ * {@code pattern: "/kit starter"} step, the exact class of bug that
  * generates support tickets nobody can reproduce.
  *
  * <p>Note this does not resolve command <em>aliases</em>: a server where

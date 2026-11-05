@@ -20,7 +20,7 @@ import java.util.UUID;
  *
  * <p><strong>Concurrency:</strong> one connection, guarded by an intrinsic
  * lock. SQLite serialises writes anyway, and the traffic here is a handful
- * of statements per player login or step completion -- a connection pool
+ * of statements per player login or step completion; a connection pool
  * would add a dependency (HikariCP) and tuning surface for no measurable
  * gain. If the MySQL provider lands in 1.1 it can pool freely; the
  * interface makes no promises either way.

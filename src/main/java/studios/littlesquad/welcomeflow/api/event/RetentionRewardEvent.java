@@ -10,7 +10,7 @@ import org.bukkit.event.HandlerList;
  * actions run.
  *
  * <p><strong>Cancellable</strong>, and cancelling genuinely withholds the
- * payout -- but note the claim has <em>already</em> been marked by the time
+ * payout, but note the claim has <em>already</em> been marked by the time
  * handlers run. That ordering is deliberate: the claim guard must be set
  * before anything can fail, or a thrown handler would leave the reward
  * payable twice. The practical consequence is that cancelling means "this
@@ -44,7 +44,7 @@ public class RetentionRewardEvent extends Event implements Cancellable {
     private boolean cancelled;
 
     /**
-     * @param claimNumber which claim this is for the player -- always 1 for
+     * @param claimNumber which claim this is for the player, always 1 for
      *     SECOND_JOIN, incrementing for RETURN_BONUS
      */
     public RetentionRewardEvent(Player player, Type type, int claimNumber) {

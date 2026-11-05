@@ -20,7 +20,7 @@ import java.util.Locale;
  *
  * <p>Everything goes through Adventure. Notably {@code sendActionBar} is
  * called with a {@link Component} rather than the {@code String} overloads
- * that also exist -- those are legacy-text APIs and are exactly the kind of
+ * that also exist; those are legacy-text APIs and are exactly the kind of
  * thing 26.x has been pruning.
  */
 public final class TextActions {

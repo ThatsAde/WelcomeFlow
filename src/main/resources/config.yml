@@ -27,7 +27,7 @@ second-join:
   #
   # Note this counts logins WelcomeFlow has seen, not the server's own
   # play count. Installing the plugin on an established server therefore
-  # does NOT pay every existing player at once -- everyone starts at 0 and
+  # does NOT pay every existing player at once: everyone starts at 0 and
   # earns the reward on their genuine second login from here on.
   trigger-join-number: 2
   # A player must have spent at least this many seconds online during
@@ -55,7 +55,7 @@ return-bonus:
   actions:
     - 'title: <gradient:#7ec8ff:#ffffff>Good to see you</gradient>;;<gray>Away for <time-away>;;10;;60;;20'
     - 'sound: ENTITY_EXPERIENCE_ORB_PICKUP;;1;;1.4'
-    - 'message: <aqua>Return bonus claimed -- see you again soon!'
+    - 'message: <aqua>Return bonus claimed. See you again soon!'
     #- 'command[console]: eco give <player> 100'
 
 ui:

@@ -119,7 +119,7 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
 
         bossBars = new ChecklistBossBarService(configManager, messageService);
         flowEngine.addObserver(new ChecklistBossBarObserver(bossBars));
-        // The public API is just another observer -- adding it required no
+        // The public API is just another observer: adding it required no
         // change to the engine's transition logic.
         flowEngine.addObserver(new EventPublishingObserver());
         // Discards /wf test data the moment the test flow finishes.
@@ -366,7 +366,7 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
         WelcomeFlowCommand command = new WelcomeFlowCommand(messageService, subCommands);
 
         // Paper plugins do not support YAML command declarations, so there is
-        // no PluginCommand to fetch — commands go through the Brigadier
+        // no PluginCommand to fetch; commands go through the Brigadier
         // registrar. This overload exists identically in 1.21.4 and 26.1.2.
         registerCommand(
                 "welcomeflow",
@@ -477,7 +477,7 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
      * <p>Clears their live progress in place so the flow starts from step 0,
      * and records them so {@link #endTestRunIfActive} wipes the persisted
      * data once they finish or log out. The flow itself runs completely
-     * normally -- the admin sees exactly what a real new player would.
+     * normally, so the admin sees exactly what a real new player would.
      */
     public PlayerSession beginTestRun(org.bukkit.entity.Player player, PlayerSession session) {
         bossBars.hide(player);

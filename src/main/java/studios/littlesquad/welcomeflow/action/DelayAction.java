@@ -18,7 +18,7 @@ public final class DelayAction implements Action {
 
     @Override
     public void execute(ActionContext context) {
-        // Intentionally empty -- the delay is the effect.
+        // Intentionally empty: the delay is the effect.
     }
 
     @Override

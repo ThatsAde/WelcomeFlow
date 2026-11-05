@@ -44,7 +44,7 @@ public final class ChecklistBossBarObserver implements FlowObserver {
     @Override
     public void onFlowInterrupted(PlayerSession session, Flow flow, Step step) {
         // The player is already leaving, so there is nobody to hide the bar
-        // from -- just drop our reference so the map does not grow.
+        // from; just drop our reference so the map does not grow.
         bossBars.forget(session.uuid());
     }
 }

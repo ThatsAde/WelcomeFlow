@@ -311,7 +311,7 @@ class FlowRegistryValidationTest {
     class Selection {
 
         @Test
-        @DisplayName("flows are ordered by priority, then id -- never by YAML order")
+        @DisplayName("flows are ordered by priority, then id, never by YAML order")
         void orderedByPriorityThenId() {
             load("""
                     flows:

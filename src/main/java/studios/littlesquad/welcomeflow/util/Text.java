@@ -8,7 +8,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /**
  * Central MiniMessage parsing helper. This is the only place in the
- * codebase that should hold a {@link MiniMessage} instance -- everything
+ * codebase that should hold a {@link MiniMessage} instance; everything
  * else asks {@code Text} to turn a raw config string into a
  * {@link Component}, so every user-facing string in the plugin renders
  * consistently: all user-facing text is Adventure / MiniMessage.

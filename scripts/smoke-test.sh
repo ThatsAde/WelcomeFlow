@@ -9,7 +9,7 @@
 #   * Paper plugins cannot declare commands in paper-plugin.yml. Calling
 #     JavaPlugin#getCommand compiles fine against every API version and then
 #     throws UnsupportedOperationException on a live server. MockBukkit
-#     cannot catch it either -- it only understands plugin.yml, so it would
+#     cannot catch it either: it only understands plugin.yml, so it would
 #     load us down the Bukkit code path where getCommand legitimately works,
 #     and happily pass.
 #   * Whether a server accepts our declared api-version.
@@ -93,13 +93,13 @@ grep -qE 'Done \([0-9.]+s\)!' "$LOG" \
 # /wf must produce the help header, proving the command registered AND
 # dispatched AND rendered MiniMessage.
 strip_ansi "$LOG" | grep -q "WelcomeFlow commands" \
-  || fail "/wf did not print help -- command likely not registered"
+  || fail "/wf did not print help, command likely not registered"
 
 # An unknown subcommand must be handled, not thrown.
 strip_ansi "$LOG" | grep -q "Unknown subcommand" \
   || fail "/wf <garbage> was not handled gracefully"
 
-# The bundled config must validate cleanly out of the box -- if the shipped
+# The bundled config must validate cleanly out of the box: if the shipped
 # defaults produce warnings, every new customer sees them on first boot.
 strip_ansi "$LOG" | grep -q "Every config file is valid" \
   || fail "/wf validate did not pass on the bundled default config"
@@ -113,7 +113,7 @@ strip_ansi "$LOG" | grep -q "Retention funnel" \
   || fail "/wf stats did not render the funnel"
 
 # The plugin's own classes must not appear in any stack trace. This is what
-# caught Paper 26.x rejecting Maven Central in the library loader -- the
+# caught Paper 26.x rejecting Maven Central in the library loader; the
 # plugin still enabled, so every other assertion passed while a RuntimeException
 # was being thrown out of WelcomeFlowLoader on every boot.
 if grep -qE "^\s+at .*studios\.littlesquad\.welcomeflow" "$LOG"; then

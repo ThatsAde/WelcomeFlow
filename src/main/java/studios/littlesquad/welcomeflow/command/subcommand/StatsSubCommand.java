@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@code /wf stats [flow]} -- the retention funnel.
+ * {@code /wf stats [flow]}: the retention funnel.
  *
  * <p>Renders joined -> started -> per-step reached -> completed, with a
  * conversion percentage against the top of the funnel and a drop-off count
@@ -25,7 +25,7 @@ import java.util.Map;
  * <em>which step</em> is losing their new players, which is the whole reason
  * the counters exist.
  *
- * <p>Reads the database, so it goes async after acknowledging -- per the
+ * <p>Reads the database, so it goes async after acknowledging, per the
  * "answers in under a tick or goes async with a working message" rule.
  */
 public final class StatsSubCommand implements SubCommand {

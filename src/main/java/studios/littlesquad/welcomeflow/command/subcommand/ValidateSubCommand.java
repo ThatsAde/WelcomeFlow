@@ -11,7 +11,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf validate} -- re-parses every config file and reports what is
+ * {@code /wf validate}: re-parses every config file and reports what is
  * wrong, with file, path and an actionable message.
  *
  * <p>This is a headline feature, so the output is held to a standard: every
@@ -20,7 +20,7 @@ import java.util.List;
  * the message alone without opening the console.
  *
  * <p>Runs the real loader rather than a separate rule set, so what it reports
- * is exactly what the plugin would do -- a validator that drifts from the
+ * is exactly what the plugin would do: a validator that drifts from the
  * parser is worse than none.
  */
 public final class ValidateSubCommand implements SubCommand {

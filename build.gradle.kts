@@ -86,7 +86,7 @@ dependencies {
 }
 
 // compileOnly (paper-api and friends) is not visible to test sources by
-// default -- test code needs the same Adventure/Bukkit types production
+// default: test code needs the same Adventure/Bukkit types production
 // code does, so pull it in explicitly rather than re-declaring paper-api
 // a second time.
 configurations {
@@ -124,7 +124,7 @@ tasks.named<JavaCompile>("compileVerify26Java") {
         }
     )
     options.release.set(25)
-    // Output is discarded -- this task only exists to fail the build.
+    // Output is discarded; this task only exists to fail the build.
     destinationDirectory.set(layout.buildDirectory.dir("verify26/discarded"))
 }
 
@@ -159,7 +159,7 @@ tasks.withType<JavaCompile> {
 // to back that is to boot the same jar on both lines.
 //
 // runServer   -> 1.21.4, the oldest supported server (Java 21)
-// runServer26 -> 26.1.2, the newest        (Java 25 -- Paper 26.x requires it)
+// runServer26 -> 26.1.2, the newest        (Java 25, which Paper 26.x requires)
 //
 // scripts/smoke-test.sh drives either one.
 // -----------------------------------------------------------------------
@@ -168,7 +168,7 @@ tasks.named<RunServer>("runServer") {
     runDirectory.set(layout.projectDirectory.dir("run"))
     // A dev/smoke server needs very little: an empty flat-ish world and one
     // plugin. Capping the heap keeps `runServer` usable on a machine that is
-    // already running an IDE and a game client -- run-paper's default lets G1
+    // already running an IDE and a game client; run-paper's default lets G1
     // reserve enough virtual space to fail outright on a loaded box.
     jvmArgs("-Xms512M", "-Xmx1G")
 }
@@ -186,11 +186,11 @@ tasks.register<RunServer>("runServer26") {
     // The auto-configured runServer task gets this from run-paper's
     // convention; a task we register ourselves does not, and silently boots
     // with zero plugins if we forget. This is deliberately the SAME artifact
-    // runServer uses -- building a separate 26.x jar would defeat the point.
+    // runServer uses; building a separate 26.x jar would defeat the point.
     pluginJars(tasks.jar.flatMap { it.archiveFile })
 
     // Paper 26.x requires Java 25. Our jar is Java 21 bytecode, which a Java
-    // 25 JVM loads happily -- that asymmetry is exactly what this task exists
+    // 25 JVM loads happily, and that asymmetry is exactly what this task exists
     // to demonstrate.
     javaLauncher.set(
         javaToolchains.launcherFor {

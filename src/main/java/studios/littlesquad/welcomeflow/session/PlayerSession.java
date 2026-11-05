@@ -20,7 +20,7 @@ import java.util.UUID;
  *
  * <p>Not thread-safe by design. Mutation happens from listeners and the
  * FlowEngine, all on the main thread; the async flush only reads, and only
- * fields that are cheap snapshots. Keep it that way -- if a future feature
+ * fields that are cheap snapshots. Keep it that way: if a future feature
  * needs off-thread mutation, add explicit synchronisation rather than
  * assuming.
  */
@@ -34,7 +34,7 @@ public final class PlayerSession {
 
     /**
      * {@code lastSeenAt} as it stood on disk <em>before</em> this join
-     * overwrote it -- i.e. when the player was last online.
+     * overwrote it, i.e. when the player was last online.
      *
      * <p>Captured at load time because ReturnBonusService needs "how long
      * were they away" and the record's own {@code lastSeenAt} has already

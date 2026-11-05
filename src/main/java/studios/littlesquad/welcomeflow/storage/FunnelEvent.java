@@ -6,7 +6,7 @@ import java.util.Locale;
  * The retention funnel that {@code /wf stats} renders:
  * joined -> started -> (per-step reached) -> completed -> returned.
  *
- * <p>These are aggregate counters, not per-player rows -- the whole feature
+ * <p>These are aggregate counters, not per-player rows; the whole feature
  * costs a single {@code UPDATE ... SET count = count + 1} per event, which
  * is why it earns its place in 1.0.
  */

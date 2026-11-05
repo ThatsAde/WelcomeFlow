@@ -4,7 +4,7 @@ package studios.littlesquad.welcomeflow.action;
  * One configured action, already parsed and validated at load time.
  *
  * <p>Instances are immutable and shared across every player that runs the
- * flow, so implementations must keep no per-player state -- everything
+ * flow, so implementations must keep no per-player state; everything
  * player-specific arrives in the {@link ActionContext}.
  *
  * <p>Called on the main thread. Implementations must not block; anything

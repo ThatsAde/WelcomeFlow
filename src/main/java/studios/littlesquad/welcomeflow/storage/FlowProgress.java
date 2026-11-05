@@ -3,7 +3,7 @@ package studios.littlesquad.welcomeflow.storage;
 import java.util.UUID;
 
 /**
- * One player's position inside one flow -- the row that makes
+ * One player's position inside one flow: the row that makes
  * "resumes exactly where it stopped" work across relogs and restarts.
  *
  * <p>Only the <em>current</em> step's progress is stored rather than a

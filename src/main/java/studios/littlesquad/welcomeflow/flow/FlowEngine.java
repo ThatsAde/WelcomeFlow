@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  * steps and fires the matching action lists.
  *
  * <p>Every state transition in the plugin goes through this class. The
- * objective listeners are deliberately thin -- they translate a Bukkit event
+ * objective listeners are deliberately thin: they translate a Bukkit event
  * into a single {@link #creditProgress} call and know nothing about steps,
  * persistence or actions. That keeps the rules in one readable place instead
  * of smeared across thirteen listeners.
@@ -48,7 +48,7 @@ public final class FlowEngine {
 
     /**
      * Reactors to state transitions (checklist bossbar, public API events).
-     * Notified defensively -- a misbehaving observer must not derail a
+     * Notified defensively: a misbehaving observer must not derail a
      * player's flow.
      */
     private final List<FlowObserver> observers = new ArrayList<>();
@@ -193,7 +193,7 @@ public final class FlowEngine {
      * task instead of a repeating timer.
      *
      * <p>The objective is "seconds online this session", so the completion
-     * time is known the moment the step starts -- there is nothing to poll
+     * time is known the moment the step starts, so there is nothing to poll
      * for. Like the hint task, it re-checks on fire that the player is still
      * on the same step of the same flow, so a task left over from before a
      * relog or a {@code /wf skip} cannot credit the wrong step.
@@ -229,7 +229,7 @@ public final class FlowEngine {
      *
      * <p>One-shot task per step rather than a repeating checker, and it
      * re-verifies on fire that the player is still online and still on the
-     * same step -- otherwise a hint for step 2 could arrive while the player
+     * same step; otherwise a hint for step 2 could arrive while the player
      * is on step 5.
      */
     private void scheduleHint(Player player, PlayerSession session, Flow flow, Step step, int stepIndex) {
@@ -477,7 +477,7 @@ public final class FlowEngine {
      * Notifies every observer, isolating failures.
      *
      * <p>An exception from the bossbar renderer or a third-party event
-     * handler must not abort the transition that triggered it -- the player's
+     * handler must not abort the transition that triggered it: the player's
      * progress matters more than the notification.
      */
     private void notifyObservers(Consumer<FlowObserver> notification) {
@@ -533,7 +533,7 @@ public final class FlowEngine {
      * The player's live session, or {@code null}.
      *
      * <p>Exposed for the objective listeners that need the session itself
-     * (rather than just to credit progress) -- the movement listener banks
+     * (rather than just to credit progress); the movement listener banks
      * fractional block distances there.
      */
     public PlayerSession sessionFor(Player player) {

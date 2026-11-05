@@ -20,7 +20,7 @@ import java.util.Locale;
  * <p>{@code Material}, {@code EntityType} and {@code Particle} are plain
  * enums in both 1.21.4 and 26.1.2, so {@code valueOf} is safe and needs no
  * registry round-trip. {@code PotionEffectType} is not an enum, so it goes
- * through {@link Registry#MOB_EFFECT} -- the modern key; the older
+ * through {@link Registry#MOB_EFFECT}, the modern key; the older
  * {@code Registry.EFFECT} alias and {@code PotionEffectType.getByName} are
  * both avoided as deprecated-for-removal.
  */
@@ -44,7 +44,7 @@ public final class Registries {
     /**
      * Resolves a potion effect by enum-style name ({@code JUMP_BOOST}) or
      * registry key ({@code minecraft:jump_boost}). Effect keys contain no
-     * dots, so lowercasing the enum form yields the key directly -- unlike
+     * dots, so lowercasing the enum form yields the key directly, unlike
      * sounds, which need the inverted index in {@link Sounds}.
      */
     public static PotionEffectType potionEffect(String name) {

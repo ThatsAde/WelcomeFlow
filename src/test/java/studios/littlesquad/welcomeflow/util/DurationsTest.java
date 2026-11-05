@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Durations appear all over flows.yml ({@code hint-after: 45s},
  * {@code 'delay: 2m'}), and a silent misparse would change timing rather than
- * fail visibly -- hence the explicit "-1 means unparseable" contract that
+ * fail visibly, hence the explicit "-1 means unparseable" contract that
  * callers turn into a config error.
  */
 @DisplayName("Durations")

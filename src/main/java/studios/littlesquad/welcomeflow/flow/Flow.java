@@ -43,7 +43,7 @@ public record Flow(
      * @param permission required node, or empty for everyone
      * @param worlds allowed world names, or empty for all
      * @param previousFlowCompleted flow that must already be finished, or
-     *     {@code null} for no prerequisite -- this is what lets flows chain
+     *     {@code null} for no prerequisite; this is what lets flows chain
      */
     public record Conditions(
             boolean firstJoinOnly,

@@ -20,7 +20,7 @@ general:
   reload-failed: '<red>Reload failed, see console. Previous configuration kept active.'
   working: '<gray>Working...'
   internal-error: '<red>Something went wrong. Ask an admin to check the console.'
-  coming-soon: '<yellow>This subcommand isn''t wired up yet -- coming in a later milestone.'
+  coming-soon: '<yellow>This subcommand isn''t available yet.'
   usage: '<red>Usage: <white>/wf <usage></white>'
 
 command:
@@ -91,4 +91,4 @@ flow:
 
 reward:
   second-join: '<gold>Welcome back! Here''s a little something for returning.'
-  return-bonus: '<gold>Thanks for coming back after a while -- enjoy this bonus!'
+  return-bonus: '<gold>Thanks for coming back after a while. Enjoy this bonus!'

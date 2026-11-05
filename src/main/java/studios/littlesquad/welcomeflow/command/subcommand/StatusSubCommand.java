@@ -16,7 +16,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf status <player>} -- current flow, step, progress and retention
+ * {@code /wf status <player>}: current flow, step, progress and retention
  * eligibility.
  *
  * <p>Includes the retention explanations ("on join 1 of 2", "on cooldown for

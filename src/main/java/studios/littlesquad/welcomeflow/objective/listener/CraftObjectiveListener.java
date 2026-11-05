@@ -18,7 +18,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  * than trying to compute the shift-click multiplier: over-counting a "craft 1
  * crafting table" step would complete it from a single shift-click of planks,
  * which is arguably correct, but under-counting would leave a player stuck.
- * Crediting the result amount is the honest, predictable middle -- and for the
+ * Crediting the result amount is the honest, predictable middle, and for the
  * common {@code amount: 1} step the distinction never arises.
  */
 final class CraftObjectiveListener implements Listener {

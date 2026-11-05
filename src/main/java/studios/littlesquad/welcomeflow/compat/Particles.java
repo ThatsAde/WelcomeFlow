@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
  *
  * <p>{@code Player#spawnParticle(...)} and {@code World#spawnParticle(...)}
  * lost every overload in paper-api 26.x. {@link ParticleBuilder} is a
- * regular class present -- with an identical method set -- in both
+ * regular class present, with an identical method set, in both
  * 1.21.4 and 26.1.2, so it is the only particle API used anywhere in this
  * plugin. Enforced by {@code compileVerify26Java} (see build.gradle.kts).
  */

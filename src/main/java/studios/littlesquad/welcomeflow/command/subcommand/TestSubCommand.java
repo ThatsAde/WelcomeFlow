@@ -14,7 +14,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf test <flow>} -- runs a flow on yourself without persisting it.
+ * {@code /wf test <flow>}: runs a flow on yourself without persisting it.
  *
  * <p>"Without persisting" is implemented by starting the flow normally and
  * then wiping the player's stored data when it finishes or they log out --

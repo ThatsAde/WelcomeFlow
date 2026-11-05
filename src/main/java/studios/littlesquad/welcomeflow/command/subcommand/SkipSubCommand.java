@@ -13,7 +13,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf skip [player]} -- force-completes the current step.
+ * {@code /wf skip [player]}: force-completes the current step.
  *
  * <p>Defaults to the sender when no player is named, so an admin testing a
  * flow can walk through it quickly. The step's {@code on-step-complete}

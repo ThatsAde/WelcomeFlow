@@ -17,8 +17,8 @@ import java.util.UUID;
  * the flow they are, and progress within the current step.
  *
  * <p>Entirely event-driven. The bar is created when a flow starts, updated on
- * step transitions and progress credits, and removed on completion or logout
- * -- there is no repeating task keeping it in sync, per the "no per-tick
+ * step transitions and progress credits, and removed on completion or logout.
+ * There is no repeating task keeping it in sync, per the "no per-tick
  * scanning loops" constraint.
  *
  * <p>One bar per player, reused across steps rather than recreated: swapping

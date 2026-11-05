@@ -17,7 +17,7 @@ import java.util.Locale;
  * tab lists and holograms.
  *
  * <p>All placeholders read the in-memory session, so they are cheap enough to
- * put on a scoreboard that refreshes every tick -- there is no database access
+ * put on a scoreboard that refreshes every tick; there is no database access
  * on any of these paths.
  *
  * <table>
@@ -35,7 +35,7 @@ import java.util.Locale;
  * </table>
  *
  * <p>Unknown placeholders return {@code null}, which tells PlaceholderAPI to
- * leave the text untouched rather than rendering an empty string -- that makes
+ * leave the text untouched rather than rendering an empty string; that makes
  * a typo visible instead of silently blank.
  */
 public final class WelcomeFlowExpansion extends PlaceholderExpansion {

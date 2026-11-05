@@ -30,7 +30,7 @@ class ObjectiveDefinitionTest {
         }
 
         @Test
-        @DisplayName("case is ignored -- '/Kit Starter' must count")
+        @DisplayName("case is ignored: '/Kit Starter' must count")
         void caseInsensitive() {
             assertTrue(commandPattern("/kit starter").matchesCommand("/Kit Starter"));
             assertTrue(commandPattern("/KIT STARTER").matchesCommand("/kit starter"));

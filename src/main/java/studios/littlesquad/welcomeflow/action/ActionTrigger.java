@@ -6,7 +6,7 @@ import java.util.Locale;
  * The points in a flow's lifecycle that action lists can attach to.
  *
  * <p>The {@link #configKey()} is what owners write in flows.yml, so these
- * names are part of the public config contract -- renaming one is a breaking
+ * names are part of the public config contract; renaming one is a breaking
  * change for every existing config.
  */
 public enum ActionTrigger {

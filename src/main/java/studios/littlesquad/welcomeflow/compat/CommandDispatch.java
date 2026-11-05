@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
  * Command dispatch via {@link Bukkit#dispatchCommand(CommandSender, String)}.
  *
  * <p>{@code Player#performCommand(String)} was removed in paper-api 26.x.
- * {@code Bukkit.dispatchCommand} is present -- and behaves the same -- in
+ * {@code Bukkit.dispatchCommand} is present, and behaves the same, in
  * both 1.21.4 and 26.1.2, so it is the only way this plugin runs a
  * command as a player or as console. Enforced by {@code compileVerify26Java}
  * (see build.gradle.kts).

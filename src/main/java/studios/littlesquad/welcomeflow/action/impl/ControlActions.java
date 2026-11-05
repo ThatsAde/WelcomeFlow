@@ -36,7 +36,7 @@ public final class ControlActions {
     /**
      * @param runnerSupplier the ActionRunner, supplied lazily because
      *     {@code conditional} needs the runner that is itself constructed
-     *     alongside this registry -- a plain reference would be a
+     *     alongside this registry; a plain reference would be a
      *     chicken-and-egg at wiring time
      * @param nestedParser turns a nested YAML entry into an Action, so
      *     conditional branches support the same two spellings as top-level

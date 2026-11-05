@@ -14,7 +14,7 @@ import java.util.function.Consumer;
  *
  * <p>The retention services decide <em>whether</em> a player is eligible;
  * this decides <em>how</em> a reward is paid and guarded. Splitting them lets
- * the eligibility rules -- the part that gates real payouts -- be tested
+ * the eligibility rules (the part that gates real payouts) be tested
  * without a server, an action runner or a database.
  */
 @FunctionalInterface

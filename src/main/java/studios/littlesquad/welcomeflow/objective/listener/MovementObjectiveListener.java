@@ -13,7 +13,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  * {@link ObjectiveType#REACH_LOCATION}, both driven by movement.
  *
  * <p>{@code PlayerMoveEvent} is by far the most frequent event this plugin
- * touches -- it fires for head rotation too -- so the handler is written to
+ * touches (it fires for head rotation too), so the handler is written to
  * bail out as early and as cheaply as possible:
  * <ol>
  *   <li>{@code ignoreCancelled} keeps us out of cancelled moves entirely.</li>

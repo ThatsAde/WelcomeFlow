@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList;
  * Fired when a player quits part-way through a flow.
  *
  * <p><strong>The player is offline when this fires</strong>, which is why it
- * extends {@link Event} directly rather than {@link WelcomeFlowEvent} -- there
+ * extends {@link Event} directly rather than {@link WelcomeFlowEvent}: there
  * is no online {@code Player} to expose. Do not attempt to message or teleport
  * them here.
  *
@@ -47,7 +47,7 @@ public class FlowAbandonEvent extends Event {
         return flowId;
     }
 
-    /** The step they dropped on -- the drop-off point for your funnel. */
+    /** The step they dropped on: the drop-off point for your funnel. */
     public String getStepId() {
         return stepId;
     }

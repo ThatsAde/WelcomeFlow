@@ -164,7 +164,7 @@ public final class ConfigManager {
      * can say {@code 'teleport: spawn'} instead of repeating coordinates.
      *
      * <p>The special name {@code spawn} falls back to the main world's spawn
-     * point when it is not explicitly configured -- that is what makes the
+     * point when it is not explicitly configured; that is what makes the
      * bundled flow work with zero edits.
      *
      * @return the location, or {@code null} if the name is unknown or its

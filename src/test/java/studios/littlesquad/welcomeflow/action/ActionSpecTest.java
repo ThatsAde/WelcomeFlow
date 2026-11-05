@@ -38,7 +38,7 @@ class ActionSpecTest {
         }
 
         @Test
-        @DisplayName("a single ';' stays inside the field -- the whole reason we use ';;'")
+        @DisplayName("a single ';' stays inside the field, the whole reason we use ';;'")
         void singleSemicolonIsNotASeparator() throws Exception {
             // This is the case the original spec's mixed ';;'/';' syntax got
             // wrong: MiniMessage and prose legitimately contain semicolons.

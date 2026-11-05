@@ -13,7 +13,7 @@ import studios.littlesquad.welcomeflow.objective.ObjectiveType;
  * Handles {@link ObjectiveType#KILL_ENTITY}.
  *
  * <p>Credits the killer, not the victim, and only when the killer is a
- * player -- {@code getKiller()} is null for environmental deaths (fall, lava,
+ * player; {@code getKiller()} is null for environmental deaths (fall, lava,
  * mob-on-mob), which must not tick anyone's step.
  */
 final class KillObjectiveListener implements Listener {

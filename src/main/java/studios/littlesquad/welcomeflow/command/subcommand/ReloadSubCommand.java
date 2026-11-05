@@ -13,7 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@code /wf reload} -- re-reads every config file.
+ * {@code /wf reload}: re-reads every config file.
  *
  * <p>Active sessions are preserved: only the definitions are swapped, so a
  * player mid-flow keeps their step and progress. Objective listeners are

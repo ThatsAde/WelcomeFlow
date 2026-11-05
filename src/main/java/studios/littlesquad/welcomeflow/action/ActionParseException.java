@@ -6,7 +6,7 @@ package studios.littlesquad.welcomeflow.action;
  *
  * <p>The message is shown verbatim to the server owner by
  * {@code /wf validate} and during startup validation, so it must name the
- * offending value and say what was expected -- never "invalid input". See
+ * offending value and say what was expected, never "invalid input". See
  * the "config validation is a headline feature" requirement.
  */
 public class ActionParseException extends Exception {

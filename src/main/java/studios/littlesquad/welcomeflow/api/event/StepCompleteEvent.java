@@ -7,8 +7,8 @@ import org.bukkit.event.HandlerList;
  * Fired when a player satisfies a step's objective, before the flow advances
  * and before the step's {@code on-step-complete} actions run.
  *
- * <p>Not cancellable. The objective has genuinely been met -- the player
- * broke the blocks, ran the command -- so refusing to advance would leave
+ * <p>Not cancellable. The objective has genuinely been met (the player
+ * broke the blocks, ran the command), so refusing to advance would leave
  * them stuck on a step they already finished, with no way to progress. To
  * gate progression, express the condition in the flow's own configuration
  * instead.

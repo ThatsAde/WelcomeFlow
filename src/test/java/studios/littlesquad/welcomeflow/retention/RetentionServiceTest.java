@@ -115,7 +115,7 @@ class RetentionServiceTest {
         }
 
         @Test
-        @DisplayName("never granted twice -- the persistent claim flag")
+        @DisplayName("never granted twice: the persistent claim flag")
         void neverGrantedTwice() {
             PlayerRecord record = record();
             record.joinCount(2);

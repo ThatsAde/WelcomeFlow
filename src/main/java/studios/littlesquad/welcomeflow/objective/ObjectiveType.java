@@ -8,7 +8,7 @@ import java.util.Set;
  *
  * <p>Each constant declares which extra config keys it understands, so
  * ConfigValidator can flag both missing required keys and keys that will be
- * silently ignored -- a step with {@code type: SEND_CHAT} and a
+ * silently ignored: a step with {@code type: SEND_CHAT} and a
  * {@code material:} line is almost certainly a copy-paste mistake worth
  * reporting.
  *
@@ -57,7 +57,7 @@ public enum ObjectiveType {
     /** Seconds spent online during the current session. */
     PLAY_TIME(Set.of(), Set.of()),
 
-    /** Advanced only via the API or {@code /wf skip} -- has no listener. */
+    /** Advanced only via the API or {@code /wf skip}, so it has no listener. */
     MANUAL(Set.of(), Set.of());
 
     private final Set<String> requiredKeys;

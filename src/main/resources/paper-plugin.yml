@@ -19,7 +19,7 @@ dependencies:
       required: false
       join-classpath: true
 
-# NOTE: Paper plugins cannot declare commands here — YAML command
+# NOTE: Paper plugins cannot declare commands here: YAML command
 # declarations are Bukkit-only and are silently ignored. /welcomeflow and its
 # aliases are registered through the Brigadier registrar in
 # WelcomeFlowPlugin#registerCommand. Permissions, however, ARE read from here.

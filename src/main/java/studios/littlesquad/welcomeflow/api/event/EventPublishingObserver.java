@@ -11,7 +11,7 @@ import studios.littlesquad.welcomeflow.session.PlayerSession;
  * Republishes engine transitions as Bukkit events for other plugins.
  *
  * <p>Registered as just another {@link FlowObserver}, exactly like the
- * checklist bossbar -- which is why adding the public API in M4 required no
+ * checklist bossbar, which is why adding the public API in M4 required no
  * changes to {@code FlowEngine}'s transition logic.
  *
  * <p>{@code FlowEngine} guards observer calls, so a third-party handler that
@@ -23,7 +23,7 @@ public final class EventPublishingObserver implements FlowObserver {
      * Fires the cancellable {@link FlowStartEvent}.
      *
      * <p>This is the veto point, called by the engine before it writes
-     * anything -- which is what makes the event's {@code setCancelled(true)}
+     * anything, which is what makes the event's {@code setCancelled(true)}
      * actually prevent the flow rather than merely being ignored.
      */
     @Override

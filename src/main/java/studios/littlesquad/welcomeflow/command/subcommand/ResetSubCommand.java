@@ -14,7 +14,7 @@ import studios.littlesquad.welcomeflow.util.Text;
 import java.util.List;
 
 /**
- * {@code /wf reset <player>} -- wipes progress and reward claim flags.
+ * {@code /wf reset <player>}: wipes progress and reward claim flags.
  *
  * <p>Works for offline players too, which matters because the usual reason to
  * reset someone is to let them re-run the tutorial <em>before</em> they next

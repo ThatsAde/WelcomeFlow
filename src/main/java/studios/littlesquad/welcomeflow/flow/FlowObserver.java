@@ -37,7 +37,7 @@ public interface FlowObserver {
     }
 
     /**
-     * A step became current -- on start, on advance, and on resume after a
+     * A step became current: on start, on advance, and on resume after a
      * relog, which is why the observer must treat this as "render this state"
      * rather than "something new happened".
      */

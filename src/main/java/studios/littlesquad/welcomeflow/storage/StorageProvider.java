@@ -11,7 +11,7 @@ import java.util.UUID;
  * need.
  *
  * <p><strong>Threading contract:</strong> every method here blocks on I/O
- * and must therefore be called off the main thread -- wrap calls in
+ * and must therefore be called off the main thread; wrap calls in
  * {@link studios.littlesquad.welcomeflow.util.Scheduling#supplyAsync} or
  * {@code runAsync}. Implementations are required to be safe for concurrent
  * use from Bukkit's async pool. Nothing in this interface touches the
@@ -64,7 +64,7 @@ public interface StorageProvider {
     /**
      * Marks every {@link FlowState#ACTIVE} row older than {@code cutoff} as
      * {@link FlowState#ABANDONED}, incrementing the matching drop-off
-     * counters. Run once at startup rather than on a timer -- an abandoned
+     * counters. Run once at startup rather than on a timer: an abandoned
      * tutorial is not time-critical, and this keeps us free of per-tick work.
      *
      * @return how many rows were reclassified

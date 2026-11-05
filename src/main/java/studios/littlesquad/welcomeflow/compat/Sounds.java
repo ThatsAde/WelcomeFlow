@@ -17,7 +17,7 @@ import java.util.Map;
  * was removed in paper-api 26.x. {@link Audience#playSound(Sound)} is
  * present and unchanged in both 1.21.4 and 26.1.2, so everything in this
  * class routes through it instead. Nothing outside {@code compat} should
- * reference the legacy overload -- {@code compileVerify26Java} (see
+ * reference the legacy overload; {@code compileVerify26Java} (see
  * build.gradle.kts) fails the build if it does.
  *
  * <p>Resolution deliberately avoids {@code Registry#match(String)} and
@@ -25,7 +25,7 @@ import java.util.Map;
  * leaning on them inside the very layer that exists to dodge removed APIs
  * would just relocate the problem. Only {@code Registry#stream()},
  * {@code Registry#getKey(T)} and {@code Registry#get(NamespacedKey)} are
- * used -- all three are stable and identical across both target versions.
+ * used; all three are stable and identical across both target versions.
  */
 public final class Sounds {
 
@@ -48,14 +48,14 @@ public final class Sounds {
      * <p>Three spellings are accepted, so existing configs and
      * resource-pack sounds both keep working:
      * <ul>
-     *   <li>Bukkit enum style -- {@code ENTITY_PLAYER_LEVELUP}</li>
-     *   <li>Registry path -- {@code entity.player.levelup}</li>
-     *   <li>Fully qualified -- {@code minecraft:entity.player.levelup},
+     *   <li>Bukkit enum style: {@code ENTITY_PLAYER_LEVELUP}</li>
+     *   <li>Registry path: {@code entity.player.levelup}</li>
+     *   <li>Fully qualified: {@code minecraft:entity.player.levelup},
      *       or a custom namespace from a resource pack</li>
      * </ul>
      *
      * @return the resolved key, or {@code null} if no such sound is
-     *     registered -- callers surface that to the user via ConfigValidator
+     *     registered; callers surface that to the user via ConfigValidator
      *     rather than throwing.
      */
     public static NamespacedKey resolve(String bukkitSoundName) {
@@ -93,7 +93,7 @@ public final class Sounds {
      * <p>The mapping runs registry-key -> enum-name, never the reverse:
      * {@code block.note_block.harp} becomes {@code BLOCK_NOTE_BLOCK_HARP},
      * which is exactly how Bukkit derives its Sound constant names. Going
-     * the other way is ambiguous -- naively swapping {@code _} for
+     * the other way is ambiguous: naively swapping {@code _} for
      * {@code .} would turn {@code BLOCK_NOTE_BLOCK_HARP} into the
      * non-existent {@code block.note.block.harp}.
      */
