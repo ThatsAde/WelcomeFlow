@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Focused on {@code matchesCommand}, the RUN_COMMAND normalisation flagged as
- * a support-ticket risk in PLAN.md. Every assertion here is a case that would
+ * Focused on {@code matchesCommand}, the RUN_COMMAND normalisation most
+ * likely to turn into support tickets. Every assertion here is a case that would
  * otherwise leave a player stuck on a tutorial step with no visible reason.
  */
 @DisplayName("ObjectiveDefinition")

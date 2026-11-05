@@ -36,6 +36,7 @@ required.
 - [Developer API](#developer-api)
 - [Compatibility](#compatibility)
 - [Troubleshooting](#troubleshooting)
+- [Building from source](#building-from-source)
 
 ---
 
@@ -561,10 +562,38 @@ without storage, because half working onboarding is worse than none.
 
 ---
 
+## Building from source
+
+You need JDK 21 and JDK 25. The jar is compiled once against paper-api
+1.21.4 for Java 21. The build then compiles the same sources a second time
+against paper-api 26.1.2 on JDK 25 and throws that output away: if anything
+uses an API that only exists on one of the two lines, the build fails.
+
+```bash
+./gradlew build                       # both compiles, all tests, the jar
+./scripts/smoke-test.sh               # boot a real Paper 1.21.4 server and drive the console
+./scripts/smoke-test.sh runServer26   # the same jar on a real Paper 26.1.2 server
+```
+
+The jar ends up in `build/libs/`. Gradle 8.14 has to run on JDK 21 (it can't
+start on 25). If Gradle doesn't find your JDKs, list them in
+`~/.gradle/gradle.properties`:
+
+```properties
+org.gradle.java.installations.paths=/path/to/jdk-21,/path/to/jdk-25
+```
+
+The unit tests use MockBukkit, which only covers the plugin's own logic. The
+smoke test is there for what MockBukkit can't see: command registration,
+`api-version` and the library loader on a real server.
+
+---
+
 ## Support
 
-Bug reports and questions go through the resource discussion page. Please
-include your server version, the plugin version, and the output of
-`/wf validate`.
+Report bugs and ask questions on the issue tracker. Please include your
+server version, the plugin version, and the output of `/wf validate`.
 
-Made by LittleSquad Studios.
+## License
+
+MIT, see [LICENSE](LICENSE). Made by LittleSquad Studios.

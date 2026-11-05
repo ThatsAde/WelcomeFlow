@@ -10,10 +10,9 @@ import java.util.function.Supplier;
 /**
  * Thin wrapper around {@link org.bukkit.scheduler.BukkitScheduler} with
  * intention-revealing names, so call sites read as "this must run on the
- * main thread" or "this runs off it" instead of bare runTask calls. See
- * the "never call Bukkit API off the main thread; never touch the DB on
- * the main thread" hard constraint in PLAN.md -- every storage call in
- * this plugin should be wrapped through {@link #supplyAsync}.
+ * main thread" or "this runs off it" instead of bare runTask calls. The
+ * rule is: never call the Bukkit API off the main thread, and never touch
+ * the database on it.
  */
 public final class Scheduling {
 

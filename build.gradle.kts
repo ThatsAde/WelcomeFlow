@@ -10,8 +10,7 @@ version = "1.0.0"
 description = "Turn first joins into returning players."
 
 // -----------------------------------------------------------------------
-// Compatibility strategy (see PLAN.md "The 1.21 <-> 26.x compatibility
-// finding"): the shipped jar is compiled once, against paper-api 1.21.4,
+// Compatibility strategy: the shipped jar is compiled once, against paper-api 1.21.4,
 // targeting Java 21 bytecode. A second, output-discarded compile of the
 // SAME sources against paper-api 26.1.2 on JDK 25 runs as part of `check`
 // and fails the build the moment any code touches a method that doesn't

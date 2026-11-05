@@ -56,7 +56,7 @@ public record ObjectiveDefinition(
      * <p>This normalisation is deliberate rather than incidental: without it
      * {@code /Kit Starter} would silently fail to satisfy a
      * {@code pattern: "/kit starter"} step, and the player would be stuck on
-     * a tutorial step with no idea why (see the scope notes in PLAN.md).
+     * a tutorial step with no idea why.
      */
     public boolean matchesCommand(String rawCommand) {
         if (pattern == null || rawCommand == null) {

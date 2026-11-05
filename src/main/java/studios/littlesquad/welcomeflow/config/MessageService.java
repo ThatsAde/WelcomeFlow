@@ -16,8 +16,8 @@ import java.util.logging.Level;
 /**
  * Loads messages.yml and turns message keys into rendered Components.
  * Every user-facing string in the plugin is requested from here rather
- * than written inline in Java -- see the "no hardcoded text anywhere in
- * Java" constraint in PLAN.md.
+ * than written inline in Java, so every message can be edited or translated
+ * in {@code messages.yml}.
  */
 public final class MessageService {
 

@@ -11,8 +11,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
  * codebase that should hold a {@link MiniMessage} instance -- everything
  * else asks {@code Text} to turn a raw config string into a
  * {@link Component}, so every user-facing string in the plugin renders
- * consistently. See the "Adventure / MiniMessage for all user-facing
- * text" hard constraint in PLAN.md.
+ * consistently: all user-facing text is Adventure / MiniMessage.
  */
 public final class Text {
 

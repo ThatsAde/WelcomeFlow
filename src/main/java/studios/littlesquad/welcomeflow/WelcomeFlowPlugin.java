@@ -56,7 +56,7 @@ import java.util.logging.Level;
 /**
  * Bootstrap: lifecycle and dependency wiring. Everything below is
  * constructor-injected from here; {@link WelcomeFlowAPI} is the only
- * static singleton in the project (see PLAN.md architecture notes).
+ * static singleton in the project.
  *
  * <p>M1 wires config/message loading and the command skeleton. The
  * storage layer, session manager, FlowEngine and objective/action

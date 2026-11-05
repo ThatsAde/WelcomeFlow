@@ -18,7 +18,7 @@ import studios.littlesquad.welcomeflow.compat.Sounds;
  * <p>Every one of these goes through the {@code compat} facade rather than
  * the Bukkit API directly, because all three underlying calls
  * ({@code Player#playSound}, {@code spawnParticle}) were removed in
- * paper-api 26.x. See the compatibility notes in PLAN.md.
+ * paper-api 26.x.
  *
  * <p>Sound names are resolved lazily at execute time, not at parse time: the
  * sound registry is not populated while the plugin is still enabling, so

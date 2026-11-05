@@ -23,8 +23,7 @@ import java.util.function.Supplier;
  * Registers {@code command}, {@code delay} and {@code conditional}.
  *
  * <p><strong>Scope note.</strong> {@code conditional} supports a fixed set
- * of conditions rather than a general expression language -- see the scope
- * judgements in PLAN.md. A parser with boolean operators and precedence
+ * of conditions rather than a general expression language. A parser with boolean operators and precedence
  * would be a multi-day feature and a permanent support burden; these five
  * cover the cases real configs need, and each one produces a precise
  * validation error when misspelled.

@@ -8,8 +8,7 @@ import java.util.Locale;
  *
  * <p>These are aggregate counters, not per-player rows -- the whole feature
  * costs a single {@code UPDATE ... SET count = count + 1} per event, which
- * is why it earns its place in 1.0 (see the retention layer notes in
- * PLAN.md).
+ * is why it earns its place in 1.0.
  */
 public enum FunnelEvent {
 

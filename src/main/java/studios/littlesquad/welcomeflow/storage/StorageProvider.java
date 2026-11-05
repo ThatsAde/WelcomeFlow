@@ -7,8 +7,8 @@ import java.util.UUID;
 /**
  * The persistence seam. {@link SqliteStorageProvider} is the only
  * implementation in 1.0; a MySQL provider can be added in 1.1 without
- * touching a single call site (see the "no premature abstraction beyond the
- * StorageProvider seam" note in PLAN.md).
+ * touching a single call site. This is the one abstraction added ahead of
+ * need.
  *
  * <p><strong>Threading contract:</strong> every method here blocks on I/O
  * and must therefore be called off the main thread -- wrap calls in
