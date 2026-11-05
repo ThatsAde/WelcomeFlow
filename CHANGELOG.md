@@ -8,7 +8,7 @@ formats are treated as public API: a breaking change to `flows.yml`,
 
 ---
 
-## [1.0.0] - unreleased
+## [1.0.0] - 2026-11-05
 
 First public release.
 
@@ -62,7 +62,9 @@ First public release.
 - `/wf status` explains retention eligibility in plain words, for example
   `on join 1 of 2` or `on cooldown for another 4h 20m`.
 - `/wf reload` preserves active sessions and re-registers objective listeners.
+  A configuration with errors is reported and not applied.
 - `/wf test` runs a flow exactly as a player sees it, then discards the data.
+  It never touches the player's real progress or the funnel statistics.
 - `/wf reset` works on offline players.
 
 ### Integration
@@ -84,7 +86,8 @@ First public release.
 - `ui.bossbar.style` accepts both Bukkit spellings (`SEGMENTED_10`) and
   Adventure spellings (`NOTCHED_10`).
 - The bundled configuration is a complete working 6 step tutorial that
-  requires zero edits.
+  requires zero edits. Rewards that need an economy plugin are included
+  commented out.
 
 ### Compatibility
 
@@ -96,7 +99,8 @@ First public release.
 ### Technical
 
 - SQLite storage behind a `StorageProvider` interface, with versioned
-  idempotent migrations. All database access is asynchronous.
+  idempotent migrations. All database access runs in order on one background
+  thread, and a failed write is retried before any newer one.
 - No shading. The one runtime library is declared to Paper's library loader.
 - Event listeners are registered only for the objective types that loaded
   flows actually use.

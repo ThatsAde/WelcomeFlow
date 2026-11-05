@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "studios.littlesquad"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 description = "Turn first joins into returning players."
 
 // -----------------------------------------------------------------------
