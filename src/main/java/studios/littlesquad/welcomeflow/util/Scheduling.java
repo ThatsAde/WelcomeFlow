@@ -43,6 +43,10 @@ public final class Scheduling {
         return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, task, delayTicks, periodTicks);
     }
 
+    public BukkitTask runSyncTimer(Runnable task, long delayTicks, long periodTicks) {
+        return Bukkit.getScheduler().runTaskTimer(plugin, task, delayTicks, periodTicks);
+    }
+
     /**
      * Runs {@code supplier} off the main thread (safe for DB/IO work),
      * then hands its result back to {@code onMainThread} on the main

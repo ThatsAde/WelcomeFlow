@@ -55,6 +55,9 @@ public interface StorageProvider {
 
     void saveProgress(FlowProgress progress) throws StorageException;
 
+    /** Atomically replaces the active pointer and stores the player snapshot. */
+    void saveSnapshot(PlayerRecord record, FlowProgress progress) throws StorageException;
+
     /** Flow ids this player has finished, for {@code previous-flow-completed}. */
     List<String> completedFlowIds(UUID uuid) throws StorageException;
 
@@ -67,6 +70,9 @@ public interface StorageProvider {
      * @return how many rows were reclassified
      */
     int markStaleProgressAbandoned(long cutoff) throws StorageException;
+
+    /** Applies one flow's expiry window using the player's last online time. */
+    int markStaleProgressAbandoned(String flowId, long cutoff) throws StorageException;
 
     /** Wipes all progress and reward flags for one player ({@code /wf reset}). */
     void resetPlayer(UUID uuid) throws StorageException;

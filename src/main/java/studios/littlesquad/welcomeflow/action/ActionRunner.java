@@ -32,16 +32,22 @@ public final class ActionRunner {
 
     /** Runs {@code actions} from the start. Safe to call with an empty list. */
     public void run(List<Action> actions, ActionContext context) {
-        if (actions == null || actions.isEmpty()) {
-            return;
-        }
-        runFrom(actions, 0, context);
+        run(actions, context, () -> { });
     }
 
-    private void runFrom(List<Action> actions, int startIndex, ActionContext context) {
+    /** Calls completion after the complete list, including delayed continuations. */
+    public void run(List<Action> actions, ActionContext context, Runnable completion) {
+        if (actions == null || actions.isEmpty()) {
+            completion.run();
+            return;
+        }
+        runFrom(actions, 0, context, context.session().generation(), completion);
+    }
+
+    private void runFrom(List<Action> actions, int startIndex, ActionContext context, long generation, Runnable completion) {
         for (int index = startIndex; index < actions.size(); index++) {
             // A delayed continuation can resume after the player logged off.
-            if (!context.player().isOnline()) {
+            if (!context.player().isOnline() || context.session().generation() != generation) {
                 return;
             }
 
@@ -58,10 +64,15 @@ public final class ActionRunner {
             if (delay > 0) {
                 int resumeAt = index + 1;
                 if (resumeAt < actions.size()) {
-                    scheduling.runSyncLater(() -> runFrom(actions, resumeAt, context), delay);
+                    scheduling.runSyncLater(() -> runFrom(actions, resumeAt, context, generation, completion), delay);
+                } else {
+                    scheduling.runSyncLater(() -> {
+                        if (context.session().generation() == generation) completion.run();
+                    }, delay);
                 }
                 return;
             }
         }
+        completion.run();
     }
 }

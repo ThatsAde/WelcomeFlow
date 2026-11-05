@@ -51,6 +51,8 @@ public final class MessageService {
         load();
     }
 
+    public void apply(YamlConfiguration candidate) { messages = candidate; }
+
     /** The plugin's chat prefix, already parsed. */
     public Component prefix() {
         return Text.parse(raw("prefix"));

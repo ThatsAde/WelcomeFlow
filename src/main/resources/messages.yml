@@ -32,6 +32,7 @@ command:
     description: 'Force-start a flow for a player'
     success: '<green>Started flow ''<flow>'' for <target>.'
     already-in-flow: '<red><target> is already in a flow. Use /wf reset first.'
+    cancelled: '<yellow>The flow was cancelled by another plugin.'
   reset:
     usage: 'reset <player>'
     description: 'Wipe progress and reward flags'

@@ -125,12 +125,16 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
         // Discards /wf test data the moment the test flow finishes.
         flowEngine.addObserver(new studios.littlesquad.welcomeflow.flow.FlowObserver() {
             @Override
-            public void onFlowComplete(org.bukkit.entity.Player player, PlayerSession session, Flow flow) {
-                endTestRunIfActive(player.getUniqueId(), player.getName());
+            public void onFlowActionsComplete(org.bukkit.entity.Player player, PlayerSession session, Flow flow) {
+                if (session.temporary()) scheduling.runSyncLater(() -> {
+                    if (sessionManager.get(player.getUniqueId()) == session)
+                        endTestRunIfActive(player.getUniqueId(), player.getName());
+                }, 1);
             }
         });
 
         initialiseRetention();
+        reportIssues(validateFiles());
 
         getServer().getPluginManager().registerEvents(
                 new SessionLifecycleListener(sessionManager, flowEngine, getLogger(),
@@ -202,24 +206,29 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
     }
 
     private void registerActionTypes() {
-        TextActions.registerInto(actionRegistry, configManager, scheduling);
-        EffectActions.registerInto(actionRegistry);
-        WorldActions.registerInto(actionRegistry, configManager);
+        configureActions(actionRegistry, configManager);
+        getLogger().info("Registered " + actionRegistry.size() + " action types.");
+    }
+
+    private void configureActions(ActionRegistry registry, ConfigManager settings) {
+        TextActions.registerInto(registry, settings, scheduling);
+        EffectActions.registerInto(registry);
+        WorldActions.registerInto(registry, settings);
+        FlowRegistry parser = new FlowRegistry(registry);
         ControlActions.registerInto(
-                actionRegistry,
+                registry,
                 // Lazily supplied: the runner exists already, but referencing it
                 // through a supplier keeps the registrar independent of wiring
                 // order if that ever changes.
                 () -> actionRunner,
                 (entries, path) -> {
                     List<ConfigIssue> nested = new ArrayList<>();
-                    List<Action> parsed = flowRegistry.parseActionList(entries, path, nested);
+                    List<Action> parsed = parser.parseActionList(entries, path, nested);
                     if (!nested.isEmpty()) {
                         throw new ActionParseException(nested.get(0).message());
                     }
                     return parsed;
                 });
-        getLogger().info("Registered " + actionRegistry.size() + " action types.");
     }
 
     /**
@@ -325,18 +334,15 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
      * Uses the shortest configured window so no flow's setting is exceeded.
      */
     private void sweepAbandonedFlows() {
-        long shortestWindow = flowRegistry.all().stream()
-                .map(flow -> flow.settings().abandonAfterMillis())
-                .filter(millis -> millis > 0)
-                .min(Long::compareTo)
-                .orElse(0L);
-        if (shortestWindow <= 0) {
-            return;
-        }
-        long cutoff = System.currentTimeMillis() - shortestWindow;
+        List<Flow> definitions = List.copyOf(flowRegistry.all());
         scheduling.runAsync(() -> {
             try {
-                int changed = storage.markStaleProgressAbandoned(cutoff);
+                int changed = 0;
+                for (Flow flow : definitions) {
+                    long window = flow.settings().abandonAfterMillis();
+                    if (window > 0) changed += storage.markStaleProgressAbandoned(
+                            flow.id(), System.currentTimeMillis() - window);
+                }
                 if (changed > 0) {
                     getLogger().info("Marked " + changed + " interrupted flow run(s) as abandoned.");
                 }
@@ -457,14 +463,13 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
             return false;
         }
         flowEngine.startFlow(player, session, flow);
-        return true;
+        return session.progress() != null && session.progress().flowId().equals(flow.id());
     }
 
     /**
      * Players currently running {@code /wf test}, whose data is discarded when
      * the run ends. Small and admin-only, so a plain set is fine.
      */
-    private final java.util.Set<java.util.UUID> testRuns = new java.util.HashSet<>();
 
     /**
      * Puts a player into a throwaway test run.
@@ -474,16 +479,14 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
      * data once they finish or log out. The flow itself runs completely
      * normally -- the admin sees exactly what a real new player would.
      */
-    public void beginTestRun(org.bukkit.entity.Player player, PlayerSession session) {
+    public PlayerSession beginTestRun(org.bukkit.entity.Player player, PlayerSession session) {
         bossBars.hide(player);
-        session.progress(null);
-        session.clearTransientCounters();
-        testRuns.add(player.getUniqueId());
+        return sessionManager.beginPreview(player.getUniqueId());
     }
 
     /** True while the player is inside a {@code /wf test} run. */
     public boolean isTestRun(java.util.UUID uuid) {
-        return testRuns.contains(uuid);
+        return sessionManager.isPreview(uuid);
     }
 
     /**
@@ -493,19 +496,12 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
      * admin's real progress or reward flags altered.
      */
     public void endTestRunIfActive(java.util.UUID uuid, String playerName) {
-        if (!testRuns.remove(uuid)) {
-            return;
+        PlayerSession original = sessionManager.endPreview(uuid);
+        org.bukkit.entity.Player player = getServer().getPlayer(uuid);
+        if (original != null && player != null && player.isOnline()) {
+            bossBars.hide(player);
+            flowEngine.refresh(player, original, null);
         }
-        sessionManager.discard(uuid);
-        rewardService.forget(uuid);
-        scheduling.runAsync(() -> {
-            try {
-                storage.resetPlayer(uuid);
-                getLogger().info("Discarded /wf test data for " + playerName + ".");
-            } catch (StorageException e) {
-                getLogger().log(Level.WARNING, "Could not discard /wf test data for " + playerName + ".", e);
-            }
-        });
     }
 
     /**
@@ -519,15 +515,11 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
         if (online != null) {
             bossBars.hide(online);
         }
-        sessionManager.discard(uuid);
         rewardService.forget(uuid);
-
-        scheduling.runAsync(() -> {
-            try {
-                storage.resetPlayer(uuid);
-                getLogger().info("Reset WelcomeFlow data for " + playerName + ".");
-            } catch (StorageException e) {
-                getLogger().log(Level.SEVERE, "Could not reset WelcomeFlow data for " + playerName + ".", e);
+        sessionManager.reset(uuid, () -> {
+            org.bukkit.entity.Player current = getServer().getPlayer(uuid);
+            if (current != null && current.isOnline() && !sessionManager.isLoaded(uuid)) {
+                sessionManager.loadOnJoin(current, session -> { });
             }
         });
     }
@@ -543,20 +535,73 @@ public final class WelcomeFlowPlugin extends JavaPlugin {
      * @return the issues found; empty means a clean reload
      */
     public List<ConfigIssue> reloadEverything() {
-        configManager.reload();
-        messageService.reload();
+        Candidate candidate = readCandidate();
+        if (candidate.issues().stream().anyMatch(ConfigIssue::isError)) return candidate.issues();
+        java.util.Map<String, Flow> previous = new java.util.HashMap<>();
+        flowRegistry.all().forEach(flow -> previous.put(flow.id(), flow));
+        configManager.apply(candidate.config());
+        messageService.apply(candidate.messages());
+        flowRegistry.apply(candidate.flows());
+        secondJoinActions = candidate.secondJoin();
+        returnBonusActions = candidate.returnBonus();
         PlaceholderApiHook.invalidate();
-
-        List<ConfigIssue> issues = new ArrayList<>(
-                flowRegistry.load(configManager.rawFlows().getConfigurationSection("flows")));
-
-        secondJoinActions = parseRewardActions("second-join.actions", issues);
-        returnBonusActions = parseRewardActions("return-bonus.actions", issues);
-
         objectiveListeners.registerFor(flowRegistry.usedObjectiveTypes());
         bossBars.hideAll(getServer().getOnlinePlayers());
+        for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
+            PlayerSession session = sessionManager.get(player.getUniqueId());
+            if (session != null) {
+                // Restore parked real progress before reconciling against new definitions.
+                PlayerSession original = sessionManager.endPreview(player.getUniqueId());
+                if (original != null) session = original;
+                Flow old = session.progress() == null ? null : previous.get(session.progress().flowId());
+                flowEngine.refresh(player, session, old);
+            }
+        }
+        sessionManager.startPeriodicFlush(configManager.periodicFlushIntervalSeconds());
+        return candidate.issues();
+    }
 
-        issues.addAll(configValidator.validateAll());
-        return issues;
+    public List<ConfigIssue> validateFiles() { return readCandidate().issues(); }
+
+    private record Candidate(ConfigManager config, org.bukkit.configuration.file.YamlConfiguration messages,
+                             FlowRegistry flows, List<Action> secondJoin, List<Action> returnBonus,
+                             List<ConfigIssue> issues) { }
+
+    private Candidate readCandidate() {
+        List<ConfigIssue> issues = new ArrayList<>();
+        for (String name : List.of("config.yml", "flows.yml", "messages.yml")) {
+            try {
+                new org.bukkit.configuration.file.YamlConfiguration().load(new File(getDataFolder(), name));
+            } catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException e) {
+                issues.add(ConfigIssue.error(name, "root", "Could not parse YAML: " + e.getMessage()));
+            }
+        }
+        if (!issues.isEmpty()) return new Candidate(null, null, null, List.of(), List.of(), List.copyOf(issues));
+        try {
+            ConfigManager settings = configManager.readCandidate();
+            var messages = configManager.readMessages();
+            ActionRegistry actions = new ActionRegistry();
+            configureActions(actions, settings);
+            FlowRegistry flows = new FlowRegistry(actions);
+            flows.load(settings.rawFlows().getConfigurationSection("flows"));
+            ConfigValidator validator = new ConfigValidator(settings, flows, actions);
+            issues.addAll(validator.validateAll());
+            issues.addAll(validator.validateDocuments(messages));
+            List<Action> second = flows.parseActionList(settings.raw().getList("second-join.actions", List.of()),
+                    "second-join.actions", issues);
+            List<Action> returning = flows.parseActionList(settings.raw().getList("return-bonus.actions", List.of()),
+                    "return-bonus.actions", issues);
+            // The flow parser reports its default filename; retention actions belong to config.yml.
+            issues.replaceAll(issue -> issue.path().startsWith("second-join.") || issue.path().startsWith("return-bonus.")
+                    ? new ConfigIssue(issue.severity(), "config.yml", issue.path(), issue.message()) : issue);
+            if (!settings.storageFile().equals(configManager.storageFile())
+                    || !settings.storageType().equals(configManager.storageType())) {
+                issues.add(ConfigIssue.error("config.yml", "storage", "Changing the database requires a server restart."));
+            }
+            return new Candidate(settings, messages, flows, second, returning, List.copyOf(issues));
+        } catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException | RuntimeException e) {
+            issues.add(ConfigIssue.error("configuration", "files", "Could not read configuration: " + e.getMessage()));
+            return new Candidate(null, null, null, List.of(), List.of(), List.copyOf(issues));
+        }
     }
 }

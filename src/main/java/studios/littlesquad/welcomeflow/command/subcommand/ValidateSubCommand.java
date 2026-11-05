@@ -55,7 +55,7 @@ public final class ValidateSubCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        List<ConfigIssue> issues = plugin.getConfigValidator().validateAll();
+        List<ConfigIssue> issues = plugin.validateFiles();
 
         if (issues.isEmpty()) {
             sender.sendMessage(messages.renderPrefixed("command.validate.ok"));

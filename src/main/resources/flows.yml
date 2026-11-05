@@ -97,5 +97,6 @@ flows:
 
     on-flow-complete:
       - 'broadcast: <yellow><player> completed the WelcomeFlow tutorial!'
-      - 'command[console]: eco give <player> 500'
       - 'give-item: DIAMOND;;3'
+      # Uncomment if you run an economy plugin:
+      #- 'command[console]: eco give <player> 500'

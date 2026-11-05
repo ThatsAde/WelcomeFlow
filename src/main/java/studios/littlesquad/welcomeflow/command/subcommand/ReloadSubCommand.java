@@ -60,7 +60,8 @@ public final class ReloadSubCommand implements SubCommand {
     public void execute(CommandSender sender, String[] args) {
         try {
             List<ConfigIssue> issues = plugin.reloadEverything();
-            sender.sendMessage(messages.renderPrefixed("general.reload-success"));
+            sender.sendMessage(messages.renderPrefixed(issues.stream().anyMatch(ConfigIssue::isError)
+                    ? "general.reload-failed" : "general.reload-success"));
 
             if (issues.isEmpty()) {
                 return;

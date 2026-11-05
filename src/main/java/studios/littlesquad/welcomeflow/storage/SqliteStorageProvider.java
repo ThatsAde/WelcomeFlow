@@ -291,6 +291,7 @@ public final class SqliteStorageProvider implements StorageProvider {
                     step_index    = excluded.step_index,
                     step_progress = excluded.step_progress,
                     state         = excluded.state,
+                    started_at    = excluded.started_at,
                     updated_at    = excluded.updated_at""";
         synchronized (lock) {
             try (PreparedStatement statement = requireConnection().prepareStatement(sql)) {
@@ -329,7 +330,37 @@ public final class SqliteStorageProvider implements StorageProvider {
     }
 
     @Override
+    public void saveSnapshot(PlayerRecord record, FlowProgress progress) throws StorageException {
+        synchronized (lock) {
+            Connection conn = requireConnection();
+            try {
+                conn.setAutoCommit(false);
+                savePlayer(record);
+                try (PreparedStatement statement = conn.prepareStatement(
+                        "DELETE FROM flow_progress WHERE uuid = ? AND state = 'ACTIVE'")) {
+                    statement.setString(1, record.uuid().toString());
+                    statement.executeUpdate();
+                }
+                if (progress != null) saveProgress(progress);
+                conn.commit();
+            } catch (SQLException | StorageException e) {
+                try { conn.rollback(); } catch (SQLException rollback) { e.addSuppressed(rollback); }
+                throw new StorageException("Could not save session for " + record.uuid(), e);
+            } finally {
+                try { conn.setAutoCommit(true); } catch (SQLException e) {
+                    throw new StorageException("Could not restore transaction state", e);
+                }
+            }
+        }
+    }
+
+    @Override
     public int markStaleProgressAbandoned(long cutoff) throws StorageException {
+        return markStaleProgressAbandoned(null, cutoff);
+    }
+
+    @Override
+    public int markStaleProgressAbandoned(String flowId, long cutoff) throws StorageException {
         // Two statements, one transaction: read which flows/steps are being
         // abandoned so the funnel can be credited, then flip the rows.
         String select = """
@@ -338,6 +369,12 @@ public final class SqliteStorageProvider implements StorageProvider {
                  WHERE state = ? AND updated_at < ?
                  GROUP BY flow_id, step_index""";
         String update = "UPDATE flow_progress SET state = ? WHERE state = ? AND updated_at < ?";
+        if (flowId != null) {
+            String filter = "state = ? AND uuid IN (SELECT uuid FROM players WHERE last_seen_at < ?) AND flow_id = ?";
+            select = "SELECT flow_id, step_index, COUNT(*) AS total FROM flow_progress WHERE "
+                    + filter + " GROUP BY flow_id, step_index";
+            update = "UPDATE flow_progress SET state = ? WHERE " + filter;
+        }
 
         synchronized (lock) {
             Connection conn = requireConnection();
@@ -348,6 +385,7 @@ public final class SqliteStorageProvider implements StorageProvider {
                 try (PreparedStatement statement = conn.prepareStatement(select)) {
                     statement.setString(1, FlowState.ACTIVE.name());
                     statement.setLong(2, cutoff);
+                    if (flowId != null) statement.setString(3, flowId);
                     try (ResultSet rs = statement.executeQuery()) {
                         while (rs.next()) {
                             abandonedPerFlow.merge(rs.getString("flow_id"), rs.getLong("total"), Long::sum);
@@ -360,6 +398,7 @@ public final class SqliteStorageProvider implements StorageProvider {
                     statement.setString(1, FlowState.ABANDONED.name());
                     statement.setString(2, FlowState.ACTIVE.name());
                     statement.setLong(3, cutoff);
+                    if (flowId != null) statement.setString(4, flowId);
                     changed = statement.executeUpdate();
                 }
 

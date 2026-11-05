@@ -49,6 +49,12 @@ public final class FlowRegistry {
         this.actionRegistry = actionRegistry;
     }
 
+    public void apply(FlowRegistry candidate) {
+        flows = candidate.flows;
+        byPriority = candidate.byPriority;
+        issues = candidate.issues;
+    }
+
     /**
      * Replaces the loaded flows with those defined in {@code root}.
      *

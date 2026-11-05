@@ -67,14 +67,14 @@ public final class SessionLifecycleListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         try {
+            onQuitCleanup.accept(event.getPlayer().getUniqueId(), event.getPlayer().getName());
             PlayerSession session = sessionManager.get(event.getPlayer().getUniqueId());
             if (session != null) {
                 // Record the drop-off step before the session is unloaded.
-                flowEngine.onQuit(session);
+                flowEngine.onQuit(event.getPlayer(), session);
             }
             sessionManager.unloadOnQuit(event.getPlayer().getUniqueId());
             // An admin who logs out mid-test must not keep the test's progress.
-            onQuitCleanup.accept(event.getPlayer().getUniqueId(), event.getPlayer().getName());
         } catch (RuntimeException e) {
             logger.log(Level.SEVERE, "Failed to save WelcomeFlow session for "
                     + event.getPlayer().getName() + " on quit.", e);

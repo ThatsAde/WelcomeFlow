@@ -50,6 +50,37 @@ public final class ConfigManager {
         load();
     }
 
+    /** Strictly reads a candidate without changing live settings. */
+    public ConfigManager readCandidate() throws IOException, org.bukkit.configuration.InvalidConfigurationException {
+        ConfigManager candidate = new ConfigManager(plugin);
+        candidate.config = readStrict(configFile, "config.yml");
+        candidate.flows = readStrict(flowsFile, "flows.yml");
+        return candidate;
+    }
+
+    public YamlConfiguration readMessages() throws IOException, org.bukkit.configuration.InvalidConfigurationException {
+        return readStrict(new File(plugin.getDataFolder(), "messages.yml"), "messages.yml");
+    }
+
+    private YamlConfiguration readStrict(File file, String resource) throws IOException,
+            org.bukkit.configuration.InvalidConfigurationException {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try { yaml.load(file); }
+        catch (org.bukkit.configuration.InvalidConfigurationException e) {
+            throw new org.bukkit.configuration.InvalidConfigurationException(resource + ": " + e.getMessage());
+        }
+        try (InputStream stream = plugin.getResource(resource)) {
+            if (stream != null) yaml.setDefaults(YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)));
+        }
+        return yaml;
+    }
+
+    public void apply(ConfigManager candidate) {
+        config = candidate.config;
+        flows = candidate.flows;
+    }
+
     private void saveDefaultIfMissing(String resourceName, File target) {
         if (!target.exists()) {
             plugin.saveResource(resourceName, false);

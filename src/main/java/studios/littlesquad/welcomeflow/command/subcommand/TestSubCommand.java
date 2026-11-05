@@ -84,8 +84,13 @@ public final class TestSubCommand implements SubCommand {
         // Clear in place rather than resetting through storage: a full reset
         // discards the live session, and we would then have nothing to start
         // the flow with until the admin relogged.
-        plugin.beginTestRun(player, session);
+        session = plugin.beginTestRun(player, session);
         plugin.flowEngine().startFlow(player, session, flow);
+        if (session.progress() == null) {
+            plugin.endTestRunIfActive(player.getUniqueId(), player.getName());
+            sender.sendMessage(messages.renderPrefixed("command.start.cancelled"));
+            return;
+        }
         sender.sendMessage(messages.renderPrefixed("command.test.success",
                 Text.placeholder("flow", flow.id())));
     }

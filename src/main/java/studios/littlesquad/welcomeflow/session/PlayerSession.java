@@ -53,6 +53,34 @@ public final class PlayerSession {
 
     private FlowProgress progress;
     private boolean dirty;
+    private boolean temporary;
+    private long generation;
+    private long playTimeSince;
+
+    public boolean temporary() { return temporary; }
+    public void temporary(boolean value) { temporary = value; }
+    public long generation() { return generation; }
+    public void invalidateTasks() { generation++; }
+
+    public void startPlayTime(long now) { playTimeSince = now; }
+
+    /** Accounts only online time, in whole seconds, before a snapshot or pause. */
+    public void capturePlayTime(long now) {
+        if (playTimeSince == 0 || progress == null) return;
+        int seconds = (int) Math.min(Integer.MAX_VALUE, Math.max(0, (now - playTimeSince) / 1000));
+        if (seconds > 0) {
+            progress.addStepProgress(seconds);
+            progress.updatedAt(now);
+            playTimeSince += seconds * 1000L;
+            markDirty();
+        }
+    }
+
+    public void pausePlayTime(long now) {
+        capturePlayTime(now);
+        playTimeSince = 0;
+        invalidateTasks();
+    }
 
     public PlayerSession(UUID uuid, String playerName, PlayerRecord record, FlowProgress progress,
                          Set<String> completedFlowIds, long sessionStartedAt, long previousLastSeenAt) {

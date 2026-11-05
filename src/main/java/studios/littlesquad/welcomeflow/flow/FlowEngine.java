@@ -84,6 +84,15 @@ public final class FlowEngine {
                 session.progress(null);
                 return;
             }
+            long window = flow.settings().abandonAfterMillis();
+            if (window > 0 && session.timeAwayMillis() >= window) {
+                existing.state(FlowState.ABANDONED);
+                session.markDirty();
+                sessionManager.flush(session);
+                incrementFunnel(flow.id(), FunnelEvent.ABANDONED.key());
+                session.progress(null);
+                return;
+            }
             if (!flow.settings().resumeOnRejoin()) {
                 restart(player, session, flow);
                 return;
@@ -119,10 +128,11 @@ public final class FlowEngine {
             return;
         }
         FlowProgress progress = FlowProgress.start(session.uuid(), flow.id(), System.currentTimeMillis());
+        session.pausePlayTime(System.currentTimeMillis());
         session.progress(progress);
         session.clearTransientCounters();
 
-        incrementFunnel(flow.id(), FunnelEvent.STARTED.key());
+        if (!session.temporary()) incrementFunnel(flow.id(), FunnelEvent.STARTED.key());
         notifyObservers(observer -> observer.onFlowStart(player, session, flow));
         actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_START),
                 ActionContext.ofFlow(player, session, flow.id()));
@@ -169,7 +179,7 @@ public final class FlowEngine {
             completeFlow(player, session, flow, progress);
             return;
         }
-        incrementFunnel(flow.id(), FunnelEvent.stepReachedKey(step.id()));
+        if (!session.temporary()) incrementFunnel(flow.id(), FunnelEvent.stepReachedKey(step.id()));
         int stepIndex = progress.stepIndex();
         int done = progress.stepProgress();
         notifyObservers(observer -> observer.onStepStart(player, session, flow, step, stepIndex, done));
@@ -193,20 +203,24 @@ public final class FlowEngine {
         if (step.objective().type() != ObjectiveType.PLAY_TIME) {
             return;
         }
-        long delayTicks = Math.max(1L, step.requiredAmount() * 20L);
+        session.startPlayTime(System.currentTimeMillis());
+        long generation = session.generation();
+        FlowProgress expected = session.progress();
+        long delayTicks = Math.max(1L, (step.requiredAmount() - expected.stepProgress()) * 20L);
         scheduling.runSyncLater(() -> {
             if (!player.isOnline()) {
                 return;
             }
             PlayerSession current = sessionManager.get(session.uuid());
-            if (current == null || current.progress() == null) {
+            if (current != session || current.generation() != generation || current.progress() != expected) {
                 return;
             }
             FlowProgress progress = current.progress();
             if (!progress.flowId().equals(flow.id()) || progress.stepIndex() != stepIndex) {
                 return;
             }
-            creditProgress(player, ObjectiveType.PLAY_TIME, step.requiredAmount());
+            session.pausePlayTime(System.currentTimeMillis());
+            forceCompleteCurrentStep(player);
         }, delayTicks);
     }
 
@@ -223,12 +237,14 @@ public final class FlowEngine {
             return;
         }
         long delayTicks = Math.max(1L, step.hintAfterMillis() / 50L);
+        long generation = session.generation();
+        FlowProgress expected = session.progress();
         scheduling.runSyncLater(() -> {
             if (!player.isOnline()) {
                 return;
             }
             PlayerSession current = sessionManager.get(session.uuid());
-            if (current == null || current.progress() == null) {
+            if (current != session || current.generation() != generation || current.progress() != expected) {
                 return;
             }
             FlowProgress progress = current.progress();
@@ -324,6 +340,7 @@ public final class FlowEngine {
     }
 
     private void completeStep(Player player, PlayerSession session, Flow flow, Step step, FlowProgress progress) {
+        session.pausePlayTime(System.currentTimeMillis());
         notifyObservers(observer -> observer.onStepComplete(player, session, flow, step));
         actionRunner.run(step.actionsFor(ActionTrigger.ON_STEP_COMPLETE),
                 contextFor(player, session, flow, step));
@@ -350,10 +367,11 @@ public final class FlowEngine {
         session.markDirty();
         sessionManager.flush(session);
 
-        incrementFunnel(flow.id(), FunnelEvent.COMPLETED.key());
+        if (!session.temporary()) incrementFunnel(flow.id(), FunnelEvent.COMPLETED.key());
         notifyObservers(observer -> observer.onFlowComplete(player, session, flow));
         actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_COMPLETE),
-                ActionContext.ofFlow(player, session, flow.id()));
+                ActionContext.ofFlow(player, session, flow.id()),
+                () -> notifyObservers(o -> o.onFlowActionsComplete(player, session, flow)));
 
         // Clearing the active pointer is what stops the finished flow being
         // resumed on the next login; the COMPLETED row stays for stats and the
@@ -369,6 +387,7 @@ public final class FlowEngine {
      * once the flow's window has passed.
      */
     public void onQuit(PlayerSession session) {
+        session.pausePlayTime(System.currentTimeMillis());
         FlowProgress progress = session.progress();
         if (progress == null) {
             return;
@@ -378,10 +397,53 @@ public final class FlowEngine {
             return;
         }
         Step step = flow.stepAt(progress.stepIndex());
-        if (step != null) {
+        if (step != null && !session.temporary()) {
             incrementFunnel(flow.id(), FunnelEvent.stepAbandonedKey(step.id()));
         }
         notifyObservers(observer -> observer.onFlowInterrupted(session, flow, step));
+    }
+
+    /** Executes abandon actions while the quitting player is still available. */
+    public void onQuit(Player player, PlayerSession session) {
+        onQuit(session);
+        FlowProgress progress = session.progress();
+        Flow flow = progress == null ? null : flowRegistry.byId(progress.flowId());
+        if (flow != null && !session.temporary()) {
+            actionRunner.run(flow.actionsFor(ActionTrigger.ON_FLOW_ABANDON),
+                    ActionContext.ofFlow(player, session, flow.id()));
+        }
+    }
+
+    /** Restores timers/UI after a preview or a validated reload, without replaying rewards. */
+    public void refresh(Player player, PlayerSession session, Flow previousFlow) {
+        session.pausePlayTime(System.currentTimeMillis());
+        FlowProgress progress = session.progress();
+        if (progress == null) return;
+        Flow flow = flowRegistry.byId(progress.flowId());
+        if (flow == null) {
+            session.progress(null);
+            sessionManager.flush(session);
+            return;
+        }
+        Step oldStep = previousFlow == null ? null : previousFlow.stepAt(progress.stepIndex());
+        if (oldStep != null) {
+            int index = flow.indexOfStep(oldStep.id());
+            if (index < 0) { index = 0; progress.stepProgress(0); }
+            else if (!oldStep.objective().equals(flow.stepAt(index).objective())) progress.stepProgress(0);
+            progress.stepIndex(index);
+        }
+        Step step = flow.stepAt(progress.stepIndex());
+        if (step == null) {
+            progress.stepIndex(0);
+            progress.stepProgress(0);
+            step = flow.stepAt(0);
+        }
+        session.markDirty();
+        Step activeStep = step;
+        notifyObservers(o -> o.onStepStart(player, session, flow, activeStep, progress.stepIndex(), progress.stepProgress()));
+        scheduleHint(player, session, flow, step, progress.stepIndex());
+        schedulePlayTimeCompletion(player, session, flow, step, progress.stepIndex());
+        sessionManager.flush(session);
     }
 
     // --- observers --------------------------------------------------------

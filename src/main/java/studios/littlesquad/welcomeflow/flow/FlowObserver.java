@@ -15,6 +15,8 @@ import studios.littlesquad.welcomeflow.session.PlayerSession;
  * transitions it cares about. Called on the main thread.
  */
 public interface FlowObserver {
+    /** Completion actions (including delays) have finished. */
+    default void onFlowActionsComplete(Player player, PlayerSession session, Flow flow) { }
 
     /**
      * Vetoes a flow before any state is written.
